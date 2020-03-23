@@ -31,8 +31,10 @@ func hybridEncryption(text []byte, pubkey *rsa.PublicKey) []byte {
 
 func hybridDecryption(cipherTextAndKey []byte, privkey *rsa.PrivateKey) []byte {
 	// TODO check if len less then len
-	cipherSymmetricKey := cipherTextAndKey[:CipherRsaLen] // TODO get from utils
-	ciphertext := cipherTextAndKey[CipherRsaLen:] // TODO get from utils
+	cipherSymmetricKey := cipherTextAndKey[:CipherRsaLen]
+	ciphertext := cipherTextAndKey[CipherRsaLen:]
+	fmt.Printf("cipherSymmetricKey: %x\n", cipherSymmetricKey)
+	fmt.Printf("ciphertext: %x\n", ciphertext)
 
 	plainSymmetricKey := DecryptWithPrivateKey(cipherSymmetricKey, privkey)
 	fmt.Printf("%x => %x\n", cipherSymmetricKey, plainSymmetricKey)
@@ -45,13 +47,6 @@ func hybridDecryption(cipherTextAndKey []byte, privkey *rsa.PrivateKey) []byte {
 	fmt.Printf("%x => %s\n", ciphertext, plaintext)
 
 	return plaintext
-}
-
-func main() {
-	text := []byte("lets check")
-	privkey, pubkey := GenerateRsaKeyPair(2048)
-	cipherTextAndKey := hybridEncryption(text, pubkey)
-	hybridDecryption(cipherTextAndKey, privkey)
 }
 
 func generateSymmetricKey(bytes int) []byte {
@@ -193,4 +188,20 @@ func DecryptWithPrivateKey(ciphertext []byte, priv *rsa.PrivateKey) []byte {
 		log.Fatal(err)
 	}
 	return plaintext
+}
+
+func WritePublicKeyToFile(filePath string, key *rsa.PublicKey) {
+	writeToFile(filePath, PublicKeyToBytes(key))
+}
+
+func WritePrivateKeyToFile(filePath string, key *rsa.PrivateKey) {
+	writeToFile(filePath, PrivateKeyToBytes(key))
+}
+
+func ReadPublicKeyFromFile(filePath string) *rsa.PublicKey {
+	return BytesToPublicKey(readFromFile(filePath))
+}
+
+func ReadPrivateKeyFromFile(filePath string) *rsa.PrivateKey {
+	return BytesToPrivateKey(readFromFile(filePath))
 }

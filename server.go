@@ -1,6 +1,7 @@
 package main
 
 import (
+	"crypto/rsa"
 	"fmt"
 	"net"
 )
@@ -9,6 +10,8 @@ type ClientManager struct {
 	clients    map[*Client]bool
 	register   chan *Client
 	unregister chan *Client
+	publicKey *rsa.PublicKey
+	privateKey *rsa.PrivateKey
 }
 
 func (manager *ClientManager) sendMessageToConnection(connection *Client, message []byte) {
@@ -45,6 +48,11 @@ func (manager *ClientManager) receive(client *Client, mediator bool, nextConnect
 	for {
 		message := make([]byte, 4096)
 		length, err := client.socket.Read(message)
+		fmt.Printf("msg: %x\n", message)
+		if !mediator {
+			fmt.Printf("len: %v\n", length)
+			message = hybridDecryption(message[:length], manager.privateKey)
+		}
 		if err != nil {
 			manager.unregister <- client
 			client.socket.Close()
@@ -56,7 +64,7 @@ func (manager *ClientManager) receive(client *Client, mediator bool, nextConnect
 			manager.sendMessageToConnection(client, messageReceivedAns)
 			// TODO take only address part, and send to the next one
 			if mediator {
-				mediatorManager.sendMessageToConnection(nextConnection, message)
+				mediatorManager.sendMessageToConnection(nextConnection, message[:length])
 			}
 		}
 	}
@@ -75,26 +83,40 @@ func (manager *ClientManager) send(client *Client) {
 	}
 }
 
-func startServerMode(myAddress string, mediator bool, nextConnection *Client, mediatorManager ClientManager) {
-	if !mediator {
+func createServerKeys(mediator bool) (*rsa.PrivateKey, *rsa.PublicKey) {
+	var myPublicKeyPath string
+	var myPrivateKeyPath string
+	if mediator {
+		myPublicKeyPath = MediatorPublicKeyPath
+		myPrivateKeyPath = MediatorPrivateKeyPath
+	} else {
 		fmt.Println("Starting server...")
+		myPublicKeyPath = ServerPublicKeyPath
+		myPrivateKeyPath = ServerPrivateKeyPath
 	}
+	privkey, pubkey := GenerateRsaKeyPair(RsaKeyBits)
+	WritePublicKeyToFile(myPublicKeyPath, pubkey)
+	WritePrivateKeyToFile(myPrivateKeyPath, privkey)
+	return privkey, pubkey
+}
+
+func startServerMode(myAddress string, mediator bool, nextConnection *Client, mediatorManager ClientManager) {
+	privkey, pubkey := createServerKeys(mediator)
+
 	listener, err := net.Listen("tcp", myAddress)
-	if err != nil {
-		fmt.Println(err)
-		// TODO handle
-	}
+	checkErr(err)
+
 	manager := ClientManager{
 		clients:    make(map[*Client]bool),
 		register:   make(chan *Client),
 		unregister: make(chan *Client),
+		publicKey: pubkey,
+		privateKey: privkey,
 	}
 	go manager.start()
 	for {
 		connection, err := listener.Accept()
-		if err != nil { // TODO check i err (and nil) is good here (or ok)
-			fmt.Println(err)
-		}
+		checkErr(err)
 		client := &Client{socket: connection, data: make(chan []byte)}
 		manager.register <- client
 		go manager.receive(client, mediator, nextConnection, mediatorManager)
