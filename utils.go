@@ -9,3 +9,7 @@ var ServerAddress = ServerHost + ":" + ServerPort
 var MediatorHost = "localhost"
 var MediatorPort = "8001"
 var MediatorAddress = MediatorHost + ":" + MediatorPort
+
+var RsaKeyBits = 2048
+var CipherRsaLen = RsaKeyBits / 8
+var AesKeyBytes = 32
