@@ -3,9 +3,11 @@ package main
 import (
 	"bufio"
 	"fmt"
+	"math/rand"
 	"net"
 	"os"
 	"strings"
+	"time"
 )
 
 type Client struct {
@@ -22,7 +24,7 @@ func (client *Client) receive() {
 			break
 		}
 		if length > 0 {
-			fmt.Println("RECEIVED:\n" + string(message))
+			fmt.Println("client RECEIVED:\n" + string(message))
 		}
 	}
 }
@@ -52,11 +54,22 @@ func addConnectionPubKey(usersMap userInfoMap, connectedServersPubkey connection
 	}
 }
 
+func chooseNewChannel(curPath []string) string {
+	lastChannel := curPath[len(curPath)-1]
+	rand.Seed(time.Now().Unix())
+	channelOptions := deleteValue(MediatorNames, lastChannel)
+	n := rand.Int() % len(channelOptions)
+	return channelOptions[n]
+}
+
 func createCipherPathMessage(message string, destination string, manager ConnectionsManager) ([]byte, string) {
 	cipherMessage := []byte(message)
 	prevChannel := destination
 	curChannel := destination
+	curPath := make([]string, 0)
+
 	for i := 0; i < PathLen; i += 1 {
+		curPath = append(curPath, curChannel)
 		if i > 0 {
 			cipherMessage = append([]byte(prevChannel), cipherMessage...)
 		}
@@ -64,7 +77,7 @@ func createCipherPathMessage(message string, destination string, manager Connect
 		curChannelPubKey := manager.connectedServersPubkey[curChannel]
 		cipherMessage = hybridEncryption(cipherMessage, curChannelPubKey)
 		prevChannel = curChannel
-		curChannel = "101"
+		curChannel = chooseNewChannel(curPath)
 	}
 	return cipherMessage, prevChannel
 }
@@ -93,8 +106,6 @@ func startClientMode(myName string, usersMap userInfoMap) {
 			createNewConnection(usersMap, nextChannel, manager.connectedServersConnections, manager.connectedServersPubkey)
 		}
 		nextChannelConnection := manager.connectedServersConnections[nextChannel]
-		fmt.Println("real msg:\n" + string(message))
-		fmt.Printf("cipher msg: %x\n", cipherMessage)
 		nextChannelConnection.socket.Write(cipherMessage)
 	}
 }

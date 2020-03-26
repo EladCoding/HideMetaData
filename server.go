@@ -15,6 +15,7 @@ type ConnectionsManager struct {
 	publicKey   *rsa.PublicKey
 	privateKey  *rsa.PrivateKey
 	usersMap userInfoMap
+	myName string
 }
 
 func (manager *ConnectionsManager) sendMessageToConnection(connection *Client, message []byte) {
@@ -61,10 +62,9 @@ func (manager *ConnectionsManager) receive(client *Client, mediator bool) {
 			client.socket.Close()
 			break
 		}
-		fmt.Printf("cipher msg: %x\n", message)
 		message = hybridDecryption(message[:length], manager.privateKey)
 		if length > 0 {
-			fmt.Println("RECEIVED:\n" + string(message))
+			fmt.Println(manager.myName + " RECEIVED:\n" + string(message))
 			if mediator {
 				answerAsMediator(manager, message, client)
 			} else {
@@ -91,17 +91,6 @@ func createKeys(myPublicKeyPath string) (*rsa.PrivateKey, *rsa.PublicKey) {
 	privkey, pubkey := GenerateRsaKeyPair(RsaKeyBits)
 	WritePublicKeyToFile(myPublicKeyPath, pubkey)
 	return privkey, pubkey
-}
-
-func createConnctionsManager(privkey *rsa.PrivateKey, pubkey *rsa.PublicKey) ConnectionsManager {
-	manager := ConnectionsManager{
-		connections: make(map[*Client]bool),
-		register:    make(chan *Client),
-		unregister:  make(chan *Client),
-		publicKey:   pubkey,
-		privateKey:  privkey,
-	}
-	return manager
 }
 
 func startServerMode(myName string, usersMap userInfoMap) {

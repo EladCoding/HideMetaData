@@ -9,7 +9,6 @@ import (
 	"crypto/x509"
 	"encoding/pem"
 	"errors"
-	"fmt"
 	"io"
 	"log"
 )
@@ -21,11 +20,7 @@ func hybridEncryption(text []byte, pubkey *rsa.PublicKey) []byte {
 		// TODO: Properly handle error
 		log.Fatal(err)
 	}
-	fmt.Printf("%s => %x\n", text, ciphertext)
-
 	cipherSymmetricKey := EncryptWithPublicKey(symmetricKey, pubkey)
-	fmt.Printf("%x => %x\n", symmetricKey, cipherSymmetricKey)
-
 	return append(cipherSymmetricKey, ciphertext...)
 }
 
@@ -33,19 +28,12 @@ func hybridDecryption(cipherTextAndKey []byte, privkey *rsa.PrivateKey) []byte {
 	// TODO check if len less then len
 	cipherSymmetricKey := cipherTextAndKey[:CipherRsaLen]
 	ciphertext := cipherTextAndKey[CipherRsaLen:]
-	fmt.Printf("cipherSymmetricKey: %x\n", cipherSymmetricKey)
-	fmt.Printf("ciphertext: %x\n", ciphertext)
-
 	plainSymmetricKey := DecryptWithPrivateKey(cipherSymmetricKey, privkey)
-	fmt.Printf("%x => %x\n", cipherSymmetricKey, plainSymmetricKey)
-
 	plaintext, err := symmetricDecryption(ciphertext, plainSymmetricKey)
 	if err != nil {
 		// TODO: Properly handle error
 		log.Fatal(err)
 	}
-	fmt.Printf("%x => %s\n", ciphertext, plaintext)
-
 	return plaintext
 }
 

@@ -1,19 +1,13 @@
 package main
 
 import (
-	"flag"
 	"fmt"
-	"os"
 	"strings"
 )
 
-func main() {
-	mode := os.Args[1]
-	name := os.Args[2]
-	flagMode := flag.String("mode", mode, "start in client or server mode")
-	flag.Parse()
+func startUser(mode string, name string) {
 	usersMap := getUsersMap()
-	switch strings.ToLower(*flagMode) {
+	switch strings.ToLower(mode) {
 	case "server":
 		startServerMode(name, usersMap)
 	case "client":

@@ -16,7 +16,7 @@ var MessageReceivedAnswer = []byte("Success!\nYour message has received\n")
 var RsaKeyBits = 2048
 var CipherRsaLen = RsaKeyBits / 8
 var AesKeyBytes = 32
-var PathLen = 2
+var PathLen = 3
 
 // servers map
 var ServerPublicKeyPathFormat = "C:/repos/labProject/HideMetaData/keys/server%s/public_key.txt"
@@ -46,6 +46,8 @@ var PublicKeyPathSpot = 0
 var AddressSpot = 1
 var UserNameLen = 3
 
+
+var MediatorNames = []string{"101", "102", "103"}
 // TODO check how to create this map properly
 // return a map containing {serverNum: {serverPublicKeyPath, serverAddress}}
 func getUsersMap() userInfoMap {
@@ -75,6 +77,7 @@ func createGeneralManager(usersMap userInfoMap, myName string) ConnectionsManage
 		connectedServersConnections : make(connectionNameToClient),
 		connectedServersPubkey : make(connectionNameToPubkey),
 		usersMap : usersMap,
+		myName: myName,
 	}
 	return manager
 }
@@ -105,4 +108,21 @@ func readFromFile(filePath string) []byte {
 	data, err := ioutil.ReadFile(filePath)
 	checkErr(err)
 	return data
+}
+
+func findValue(slic []string, val string) int {
+		for i, n := range slic {
+			if val == n {
+				return i
+			}
+		}
+		return len(slic)
+}
+
+func deleteValue(slic []string, val string) []string {
+	if i := findValue(slic, val); i == len(slic) {
+		return slic
+	} else {
+		return append(slic[:i], slic[i+1:]...)
+	}
 }
