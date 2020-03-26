@@ -2,9 +2,11 @@ package main
 
 import (
 	"bufio"
+	"crypto/rsa"
 	"fmt"
 	"net"
 	"os"
+	"strings"
 )
 
 type Client struct {
@@ -26,25 +28,48 @@ func (client *Client) receive() {
 	}
 }
 
-func startClientMode(connectionAddress string) {
+func startClientMode(myName string, serverMap userInfoMap, mediatorMap userInfoMap) {
 	fmt.Println("Starting client...")
-	connection, err := net.Dial("tcp", connectionAddress)
-	checkErr(err)
-	client := &Client{socket: connection}
-	go client.receive()
-
-	//mediatorPubKey := ReadPublicKeyFromFile(MediatorPublicKeyPath)
-	serverPubKey := ReadPublicKeyFromFile(ServerPublicKeyPath)
-	//serverPrivateKey := ReadPrivateKeyFromFile(ServerPrivateKeyPath)
+	connectedServersConnections := make(connectionNameToClient)
+	connectedServersPubkey := make(connectionNameToPubkey)
+	var serverConnection *Client
+	var serverPubKey *rsa.PublicKey
+	var stdinReader *bufio.Reader
 
 	for {
-		reader := bufio.NewReader(os.Stdin)
-		message, _ := reader.ReadString('\n')
+		fmt.Println("what server you want to send your message? (currently 001 002 or 003)")
+		stdinReader = bufio.NewReader(os.Stdin)
+		serverName, _ := stdinReader.ReadString('\n')
+		serverName = strings.TrimRight(serverName, "\n")
+		if _, ok := serverMap[serverName]; !ok {
+			fmt.Println("The server does not exists!\n")
+			continue
+		}
+		if _, ok := connectedServersConnections[serverName]; !ok {
+			serverAddress := serverMap[serverName][AddressSpot]
+			connectionSocket, err := net.Dial("tcp", serverAddress)
+			checkErr(err)
+			serverConnection = &Client{socket: connectionSocket}
+
+			serverPubKeyPath := serverMap[serverName][PublicKeyPathSpot]
+			serverPubKey = ReadPublicKeyFromFile(serverPubKeyPath)
+
+			connectedServersConnections[serverName] = serverConnection
+			connectedServersPubkey[serverName] = serverPubKey
+
+			go serverConnection.receive()
+		}
+
+		serverConnection = connectedServersConnections[serverName]
+		serverPubKey := connectedServersPubkey[serverName]
+
+		fmt.Println("what is your message, for server " + serverName + "?")
+		stdinReader = bufio.NewReader(os.Stdin)
+		message, _ := stdinReader.ReadString('\n')
 		cipherMessage := hybridEncryption([]byte(message), serverPubKey)
 		fmt.Println("real msg:\n" + string(message))
-		fmt.Printf("cipher msg: %x\n",cipherMessage)
-		//plainMessage := hybridDecryption(cipherMessage, serverPrivateKey)
-		//fmt.Println("%x\n", plainMessage)
-		connection.Write(cipherMessage)
+		fmt.Printf("cipher msg: %x\n", cipherMessage)
+
+		serverConnection.socket.Write(cipherMessage)
 	}
 }

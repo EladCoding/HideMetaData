@@ -6,15 +6,15 @@ import (
 	"net"
 )
 
-type ClientManager struct {
-	clients    map[*Client]bool
-	register   chan *Client
-	unregister chan *Client
-	publicKey *rsa.PublicKey
-	privateKey *rsa.PrivateKey
+type ConnectionsManager struct {
+	connections map[*Client]bool
+	register    chan *Client
+	unregister  chan *Client
+	publicKey   *rsa.PublicKey
+	privateKey  *rsa.PrivateKey
 }
 
-func (manager *ClientManager) sendMessageToConnection(connection *Client, message []byte) {
+func (manager *ConnectionsManager) sendMessageToConnection(connection *Client, message []byte) {
 	select {
 	case connection.data <- message:
 	default:
@@ -22,29 +22,29 @@ func (manager *ClientManager) sendMessageToConnection(connection *Client, messag
 	}
 }
 
-func (manager *ClientManager) terminateConnection(connection *Client) {
+func (manager *ConnectionsManager) terminateConnection(connection *Client) {
 	close(connection.data)
-	delete(manager.clients, connection)
+	delete(manager.connections, connection)
 	fmt.Println("A connection has terminated!\n%v", connection)
 }
 
-func (manager *ClientManager) start() {
+func (manager *ConnectionsManager) start() {
 	for {
 		select {
 		case connection := <-manager.register:
-			manager.clients[connection] = true
+			manager.connections[connection] = true
 			fmt.Println("Added new connection!\n%v", connection)
 			connection.data <- ConnectionSuccessfulAnswer
 
 		case connection := <-manager.unregister:
-			if _, ok := manager.clients[connection]; ok {
+			if _, ok := manager.connections[connection]; ok {
 				manager.terminateConnection(connection) // TODO add reason
 			}
 		}
 	}
 }
 
-func (manager *ClientManager) receive(client *Client, mediator bool, nextConnection *Client, mediatorManager ClientManager) {
+func (manager *ConnectionsManager) receive(client *Client, mediator bool, nextConnection *Client, mediatorManager ConnectionsManager) {
 	for {
 		message := make([]byte, 4096)
 		length, err := client.socket.Read(message)
@@ -70,7 +70,7 @@ func (manager *ClientManager) receive(client *Client, mediator bool, nextConnect
 	}
 }
 
-func (manager *ClientManager) send(client *Client) {
+func (manager *ConnectionsManager) send(client *Client) {
 	defer client.socket.Close()
 	for {
 		select {
@@ -83,43 +83,41 @@ func (manager *ClientManager) send(client *Client) {
 	}
 }
 
-func createServerKeys(mediator bool) (*rsa.PrivateKey, *rsa.PublicKey) {
-	var myPublicKeyPath string
-	var myPrivateKeyPath string
-	if mediator {
-		myPublicKeyPath = MediatorPublicKeyPath
-		myPrivateKeyPath = MediatorPrivateKeyPath
-	} else {
-		fmt.Println("Starting server...")
-		myPublicKeyPath = ServerPublicKeyPath
-		myPrivateKeyPath = ServerPrivateKeyPath
-	}
+func createKeys(myPublicKeyPath string) (*rsa.PrivateKey, *rsa.PublicKey) {
 	privkey, pubkey := GenerateRsaKeyPair(RsaKeyBits)
 	WritePublicKeyToFile(myPublicKeyPath, pubkey)
-	WritePrivateKeyToFile(myPrivateKeyPath, privkey)
 	return privkey, pubkey
 }
 
-func startServerMode(myAddress string, mediator bool, nextConnection *Client, mediatorManager ClientManager) {
-	privkey, pubkey := createServerKeys(mediator)
+func createConnctionsManager(privkey *rsa.PrivateKey, pubkey *rsa.PublicKey) ConnectionsManager {
+	manager := ConnectionsManager{
+		connections: make(map[*Client]bool),
+		register:    make(chan *Client),
+		unregister:  make(chan *Client),
+		publicKey:   pubkey,
+		privateKey:  privkey,
+	}
+	return manager
+}
+
+func startServerMode(myName string, serverMap userInfoMap, mediatorMap userInfoMap,  mediator bool, nextConnection *Client, mediatorManager ConnectionsManager) {
+	// TODO check if mediator
+	fmt.Println("Starting server...")
+	myAddress := serverMap[myName][AddressSpot]
+	myPublicKeyPath := serverMap[myName][PublicKeyPathSpot]
+	privkey, pubkey := createKeys(myPublicKeyPath)
+	clientsManager := createConnctionsManager(privkey, pubkey)
 
 	listener, err := net.Listen("tcp", myAddress)
 	checkErr(err)
 
-	manager := ClientManager{
-		clients:    make(map[*Client]bool),
-		register:   make(chan *Client),
-		unregister: make(chan *Client),
-		publicKey: pubkey,
-		privateKey: privkey,
-	}
-	go manager.start()
+	go clientsManager.start()
 	for {
 		connection, err := listener.Accept()
 		checkErr(err)
 		client := &Client{socket: connection, data: make(chan []byte)}
-		manager.register <- client
-		go manager.receive(client, mediator, nextConnection, mediatorManager)
-		go manager.send(client)
+		clientsManager.register <- client
+		go clientsManager.receive(client, mediator, nextConnection, mediatorManager)
+		go clientsManager.send(client)
 	}
 }
