@@ -88,6 +88,7 @@ func startClientMode(myName string, usersMap userInfoMap) {
 	manager := createGeneralManager(usersMap, myName)
 
 	for {
+		time.Sleep(1 * time.Second)
 		fmt.Println("what server you want to send your message? (currently 001 002 or 003)")
 		stdinReader = bufio.NewReader(os.Stdin)
 		serverName, _ := stdinReader.ReadString('\n')
