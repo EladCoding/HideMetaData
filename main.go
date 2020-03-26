@@ -12,20 +12,14 @@ func main() {
 	name := os.Args[2]
 	flagMode := flag.String("mode", mode, "start in client or server mode")
 	flag.Parse()
-	mediatorMap := getMediatorMap()
-	serversMap := getServerMap()
+	usersMap := getUsersMap()
 	switch strings.ToLower(*flagMode) {
 	case "server":
-		nilManager := ConnectionsManager{ // TODO check how to fix that (we don't use this arg)
-			connections: make(map[*Client]bool),
-			register:    make(chan *Client),
-			unregister:  make(chan *Client),
-		}
-		startServerMode(name, serversMap, mediatorMap, false, nil, nilManager)
+		startServerMode(name, usersMap)
 	case "client":
-		startClientMode(name, serversMap, mediatorMap)
-	//case "mediator":
-	//	startMediatorMode(name, serversMap, mediatorMap)
+		startClientMode(name, usersMap)
+	case "mediator":
+		startMediatorMode(name, usersMap)
 	default:
 		fmt.Println("You can only be client mediator or server")
 	}

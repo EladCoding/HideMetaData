@@ -7,11 +7,14 @@ import (
 )
 
 type ConnectionsManager struct {
+	connectedServersConnections connectionNameToClient
+	connectedServersPubkey connectionNameToPubkey
 	connections map[*Client]bool
 	register    chan *Client
 	unregister  chan *Client
 	publicKey   *rsa.PublicKey
 	privateKey  *rsa.PrivateKey
+	usersMap userInfoMap
 }
 
 func (manager *ConnectionsManager) sendMessageToConnection(connection *Client, message []byte) {
@@ -44,27 +47,28 @@ func (manager *ConnectionsManager) start() {
 	}
 }
 
-func (manager *ConnectionsManager) receive(client *Client, mediator bool, nextConnection *Client, mediatorManager ConnectionsManager) {
+func answerAsServer(manager *ConnectionsManager, message []byte, sender *Client) {
+	messageReceivedAns := append(MessageReceivedAnswer, message...)
+	manager.sendMessageToConnection(sender, messageReceivedAns)
+}
+
+func (manager *ConnectionsManager) receive(client *Client, mediator bool) {
 	for {
 		message := make([]byte, 4096)
 		length, err := client.socket.Read(message)
-		fmt.Printf("msg: %x\n", message)
-		if !mediator {
-			fmt.Printf("len: %v\n", length)
-			message = hybridDecryption(message[:length], manager.privateKey)
-		}
 		if err != nil {
 			manager.unregister <- client
 			client.socket.Close()
 			break
 		}
+		fmt.Printf("cipher msg: %x\n", message)
+		message = hybridDecryption(message[:length], manager.privateKey)
 		if length > 0 {
 			fmt.Println("RECEIVED:\n" + string(message))
-			messageReceivedAns := append(MessageReceivedAnswer, message...)
-			manager.sendMessageToConnection(client, messageReceivedAns)
-			// TODO take only address part, and send to the next one
 			if mediator {
-				mediatorManager.sendMessageToConnection(nextConnection, message[:length])
+				answerAsMediator(manager, message, client)
+			} else {
+				answerAsServer(manager, message, client)
 			}
 		}
 	}
@@ -100,14 +104,10 @@ func createConnctionsManager(privkey *rsa.PrivateKey, pubkey *rsa.PublicKey) Con
 	return manager
 }
 
-func startServerMode(myName string, serverMap userInfoMap, mediatorMap userInfoMap,  mediator bool, nextConnection *Client, mediatorManager ConnectionsManager) {
-	// TODO check if mediator
+func startServerMode(myName string, usersMap userInfoMap) {
 	fmt.Println("Starting server...")
-	myAddress := serverMap[myName][AddressSpot]
-	myPublicKeyPath := serverMap[myName][PublicKeyPathSpot]
-	privkey, pubkey := createKeys(myPublicKeyPath)
-	clientsManager := createConnctionsManager(privkey, pubkey)
-
+	clientsManager := createGeneralManager(usersMap, myName)
+	myAddress := usersMap[myName][AddressSpot]
 	listener, err := net.Listen("tcp", myAddress)
 	checkErr(err)
 
@@ -117,7 +117,7 @@ func startServerMode(myName string, serverMap userInfoMap, mediatorMap userInfoM
 		checkErr(err)
 		client := &Client{socket: connection, data: make(chan []byte)}
 		clientsManager.register <- client
-		go clientsManager.receive(client, mediator, nextConnection, mediatorManager)
+		go clientsManager.receive(client, false)
 		go clientsManager.send(client)
 	}
 }

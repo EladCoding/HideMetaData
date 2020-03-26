@@ -16,6 +16,7 @@ var MessageReceivedAnswer = []byte("Success!\nYour message has received\n")
 var RsaKeyBits = 2048
 var CipherRsaLen = RsaKeyBits / 8
 var AesKeyBytes = 32
+var PathLen = 2
 
 // servers map
 var ServerPublicKeyPathFormat = "C:/repos/labProject/HideMetaData/keys/server%s/public_key.txt"
@@ -43,44 +44,39 @@ type connectionNameToPubkey map[string]*rsa.PublicKey
 
 var PublicKeyPathSpot = 0
 var AddressSpot = 1
-
-// TODO tmp for debug
-var ServerAddress = "localhost:8000"
-var MediatorAddress = "localhost:8001"
-var ServerPublicKeyPath = "C:/repos/labProject/HideMetaData/keys/server/public_key"
-var ServerPrivateKeyPath = "C:/repos/labProject/HideMetaData/keys/server/private_key"
-var MediatorPublicKeyPath = "C:/repos/labProject/HideMetaData/keys/mediator/public_key"
-var MediatorPrivateKeyPath = "C:/repos/labProject/HideMetaData/keys/mediator/private_key"
+var UserNameLen = 3
 
 // TODO check how to create this map properly
 // return a map containing {serverNum: {serverPublicKeyPath, serverAddress}}
-func getServerMap() userInfoMap {
-	serverMap := userInfoMap{
+func getUsersMap() userInfoMap {
+	usersMap := userInfoMap{
 		"001": {fmt.Sprintf(ServerPublicKeyPathFormat, "001"), fmt.Sprintf(ServerAddressFormat, "001")},
 		"002": {fmt.Sprintf(ServerPublicKeyPathFormat, "002"), fmt.Sprintf(ServerAddressFormat, "002")},
 		"003": {fmt.Sprintf(ServerPublicKeyPathFormat, "003"), fmt.Sprintf(ServerAddressFormat, "003")},
+		"101": {fmt.Sprintf(MediatorPublicKeyPathFormat, "101"), fmt.Sprintf(MediatorAddressFormat, "101")},
+		"102": {fmt.Sprintf(MediatorPublicKeyPathFormat, "102"), fmt.Sprintf(MediatorAddressFormat, "102")},
+		"103": {fmt.Sprintf(MediatorPublicKeyPathFormat, "103"), fmt.Sprintf(MediatorAddressFormat, "103")},
+		"201": {fmt.Sprintf(ClientPublicKeyPathFormat, "201"), fmt.Sprintf(ClientAddressFormat, "201")},
+		"202": {fmt.Sprintf(ClientPublicKeyPathFormat, "202"), fmt.Sprintf(ClientAddressFormat, "202")},
+		"203": {fmt.Sprintf(ClientPublicKeyPathFormat, "203"), fmt.Sprintf(ClientAddressFormat, "203")},
 		}
-	return serverMap
+	return usersMap
 }
 
-// return a map containing {mediatorNum: {mediatorPublicKeyPath, mediatorAddress}}
-func getMediatorMap() userInfoMap {
-	mediatorMap := userInfoMap{
-		"001": {fmt.Sprintf(MediatorPublicKeyPathFormat, "001"), fmt.Sprintf(MediatorAddressFormat, "001")},
-		"002": {fmt.Sprintf(MediatorPublicKeyPathFormat, "002"), fmt.Sprintf(MediatorAddressFormat, "002")},
-		"003": {fmt.Sprintf(MediatorPublicKeyPathFormat, "003"), fmt.Sprintf(MediatorAddressFormat, "003")},
+func createGeneralManager(usersMap userInfoMap, myName string) ConnectionsManager {
+	myPublicKeyPath := usersMap[myName][PublicKeyPathSpot]
+	privkey, pubkey := createKeys(myPublicKeyPath)
+	manager := ConnectionsManager{
+		connections: make(map[*Client]bool),
+		register:    make(chan *Client),
+		unregister:  make(chan *Client),
+		publicKey:   pubkey,
+		privateKey:  privkey,
+		connectedServersConnections : make(connectionNameToClient),
+		connectedServersPubkey : make(connectionNameToPubkey),
+		usersMap : usersMap,
 	}
-	return mediatorMap
-}
-
-// return a map containing {clientNum: {clientPublicKeyPath, clientAddress}}
-func getClientMap() userInfoMap {
-	clientMap := userInfoMap{
-		"001": {fmt.Sprintf(ClientPublicKeyPathFormat, "001"), fmt.Sprintf(ClientAddressFormat, "001")},
-		"002": {fmt.Sprintf(ClientPublicKeyPathFormat, "002"), fmt.Sprintf(ClientAddressFormat, "002")},
-		"003": {fmt.Sprintf(ClientPublicKeyPathFormat, "003"), fmt.Sprintf(ClientAddressFormat, "003")},
-	}
-	return clientMap
+	return manager
 }
 
 func getAddress(serverMap userInfoMap, mediatorMap userInfoMap, mediator bool, addressNum string) string {
@@ -95,13 +91,6 @@ func checkErr(err error) {
 	if err != nil {
 		panic(err)
 	}
-}
-
-func splitConnectionMap(connection connectionNameToClient) (string, *Client) {
-	for k, v := range connection {
-		return k, v
-	}
-	return "", nil
 }
 
 func writeToFile(filePath string, data []byte) {
