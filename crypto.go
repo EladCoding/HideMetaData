@@ -37,6 +37,12 @@ func hybridDecryption(cipherTextAndKey []byte, privkey *rsa.PrivateKey) []byte {
 	return plaintext
 }
 
+func createKeys(myPublicKeyPath string) (*rsa.PrivateKey, *rsa.PublicKey) {
+	privkey, pubkey := GenerateRsaKeyPair(RsaKeyBits)
+	WritePublicKeyToFile(myPublicKeyPath, pubkey)
+	return privkey, pubkey
+}
+
 func generateSymmetricKey(bytes int) []byte {
 	rng := rand.Reader
 	key := make([]byte, bytes)

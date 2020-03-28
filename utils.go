@@ -4,6 +4,7 @@ import (
 	"crypto/rsa"
 	"fmt"
 	"io/ioutil"
+	"net"
 	"os"
 	"path/filepath"
 )
@@ -18,36 +19,51 @@ var CipherRsaLen = RsaKeyBits / 8
 var AesKeyBytes = 32
 var PathLen = 3
 
+var working_dir, _ = os.Getwd()
 // servers map
-var ServerPublicKeyPathFormat = "C:/repos/labProject/HideMetaData/keys/server%s/public_key.txt"
-var ServerPrivateKeyPathFormat = "C:/repos/labProject/HideMetaData/keys/server%s/private_key.txt"
+var ServerPublicKeyPathFormat = working_dir + "/keys/server%s/public_key.txt"
+var ServerPrivateKeyPathFormat = working_dir + "/keys/server%s/private_key.txt"
 var ServerHost = "localhost"
 var ServerPortFormat = "9%s"
 var ServerAddressFormat = ServerHost + ":" + ServerPortFormat
 // mediators map
-var MediatorPublicKeyPathFormat = "C:/repos/labProject/HideMetaData/keys/mediator%s/public_key.txt"
-var MediatorPrivateKeyPathFormat = "C:/repos/labProject/HideMetaData/keys/mediator%s/private_key.txt"
+var MediatorPublicKeyPathFormat = working_dir + "/keys/mediator%s/public_key.txt"
+var MediatorPrivateKeyPathFormat = working_dir + "/keys/mediator%s/private_key.txt"
 var MediatorHost = "localhost"
 var MediatorHostFormat = "8%s"
 var MediatorAddressFormat = MediatorHost + ":" + MediatorHostFormat
 // clients map
-var ClientPublicKeyPathFormat = "C:/repos/labProject/HideMetaData/keys/client%s/public_key.txt"
-var ClientPrivateKeyPathFormat = "C:/repos/labProject/HideMetaData/keys/client%s/private_key.txt"
+var ClientPublicKeyPathFormat = working_dir + "/keys/client%s/public_key.txt"
+var ClientPrivateKeyPathFormat = working_dir + "/keys/client%s/private_key.txt"
 var ClientHost = "localhost"
 var ClientHostFormat = "7%s"
 var ClientAddressFormat = ClientHost + ":" + ClientHostFormat
 
-
-type userInfoMap map[string][2]string
-type connectionNameToClient map[string]*Client
-type connectionNameToPubkey map[string]*rsa.PublicKey
+var MediatorNames = []string{"101", "102", "103"}
 
 var PublicKeyPathSpot = 0
 var AddressSpot = 1
 var UserNameLen = 3
 
+type userInfoMap map[string][2]string
+type connectionNameToClient map[string]*Connection
+type connectionNameToPubkey map[string]*rsa.PublicKey
+type Connection struct {
+	socket net.Conn
+	data   chan []byte
+}
+type ConnectionsManager struct {
+	connectedServersConnections connectionNameToClient
+	connectedServersPubkey connectionNameToPubkey
+	connections map[*Connection]bool
+	register    chan *Connection
+	unregister  chan *Connection
+	publicKey   *rsa.PublicKey
+	privateKey  *rsa.PrivateKey
+	usersMap userInfoMap
+	myName string
+}
 
-var MediatorNames = []string{"101", "102", "103"}
 // TODO check how to create this map properly
 // return a map containing {serverNum: {serverPublicKeyPath, serverAddress}}
 func getUsersMap() userInfoMap {
@@ -69,9 +85,9 @@ func createGeneralManager(usersMap userInfoMap, myName string) ConnectionsManage
 	myPublicKeyPath := usersMap[myName][PublicKeyPathSpot]
 	privkey, pubkey := createKeys(myPublicKeyPath)
 	manager := ConnectionsManager{
-		connections: make(map[*Client]bool),
-		register:    make(chan *Client),
-		unregister:  make(chan *Client),
+		connections: make(map[*Connection]bool),
+		register:    make(chan *Connection),
+		unregister:  make(chan *Connection),
 		publicKey:   pubkey,
 		privateKey:  privkey,
 		connectedServersConnections : make(connectionNameToClient),
@@ -80,14 +96,6 @@ func createGeneralManager(usersMap userInfoMap, myName string) ConnectionsManage
 		myName: myName,
 	}
 	return manager
-}
-
-func getAddress(serverMap userInfoMap, mediatorMap userInfoMap, mediator bool, addressNum string) string {
-	if mediator {
-		return mediatorMap[addressNum][AddressSpot]
-	} else {
-		return serverMap[addressNum][AddressSpot]
-	}
 }
 
 func checkErr(err error) {

@@ -1,24 +1,12 @@
 package main
 
 import (
-	"crypto/rsa"
 	"fmt"
 	"net"
 )
 
-type ConnectionsManager struct {
-	connectedServersConnections connectionNameToClient
-	connectedServersPubkey connectionNameToPubkey
-	connections map[*Client]bool
-	register    chan *Client
-	unregister  chan *Client
-	publicKey   *rsa.PublicKey
-	privateKey  *rsa.PrivateKey
-	usersMap userInfoMap
-	myName string
-}
 
-func (manager *ConnectionsManager) sendMessageToConnection(connection *Client, message []byte) {
+func (manager *ConnectionsManager) sendMessageToConnection(connection *Connection, message []byte) {
 	select {
 	case connection.data <- message:
 	default:
@@ -26,7 +14,7 @@ func (manager *ConnectionsManager) sendMessageToConnection(connection *Client, m
 	}
 }
 
-func (manager *ConnectionsManager) terminateConnection(connection *Client) {
+func (manager *ConnectionsManager) terminateConnection(connection *Connection) {
 	close(connection.data)
 	delete(manager.connections, connection)
 	fmt.Println("A connection has terminated!\n%v", connection)
@@ -48,12 +36,12 @@ func (manager *ConnectionsManager) start() {
 	}
 }
 
-func answerAsServer(manager *ConnectionsManager, message []byte, sender *Client) {
+func answerAsServer(manager *ConnectionsManager, message []byte, sender *Connection) {
 	messageReceivedAns := append(MessageReceivedAnswer, message...)
 	manager.sendMessageToConnection(sender, messageReceivedAns)
 }
 
-func (manager *ConnectionsManager) receive(client *Client, mediator bool) {
+func (manager *ConnectionsManager) receiveAsServer(client *Connection, mediator bool) {
 	for {
 		message := make([]byte, 4096)
 		length, err := client.socket.Read(message)
@@ -74,7 +62,7 @@ func (manager *ConnectionsManager) receive(client *Client, mediator bool) {
 	}
 }
 
-func (manager *ConnectionsManager) send(client *Client) {
+func (manager *ConnectionsManager) send(client *Connection) {
 	defer client.socket.Close()
 	for {
 		select {
@@ -87,26 +75,20 @@ func (manager *ConnectionsManager) send(client *Client) {
 	}
 }
 
-func createKeys(myPublicKeyPath string) (*rsa.PrivateKey, *rsa.PublicKey) {
-	privkey, pubkey := GenerateRsaKeyPair(RsaKeyBits)
-	WritePublicKeyToFile(myPublicKeyPath, pubkey)
-	return privkey, pubkey
-}
-
-func startServerMode(myName string, usersMap userInfoMap) {
-	fmt.Println("Starting server...")
-	clientsManager := createGeneralManager(usersMap, myName)
+func startServerMode(myName string, usersMap userInfoMap, mediator bool) {
+	fmt.Println("Starting Server...")
+	manager := createGeneralManager(usersMap, myName)
 	myAddress := usersMap[myName][AddressSpot]
 	listener, err := net.Listen("tcp", myAddress)
 	checkErr(err)
+	go manager.start()
 
-	go clientsManager.start()
 	for {
 		connection, err := listener.Accept()
 		checkErr(err)
-		client := &Client{socket: connection, data: make(chan []byte)}
-		clientsManager.register <- client
-		go clientsManager.receive(client, false)
-		go clientsManager.send(client)
+		client := &Connection{socket: connection, data: make(chan []byte)}
+		manager.register <- client
+		go manager.receiveAsServer(client, mediator)
+		go manager.send(client)
 	}
 }

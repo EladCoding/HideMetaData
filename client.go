@@ -10,12 +10,9 @@ import (
 	"time"
 )
 
-type Client struct {
-	socket net.Conn
-	data   chan []byte
-}
 
-func (client *Client) receive() {
+// only client
+func (client *Connection) receiveAsClient() {
 	for {
 		message := make([]byte, 4096)
 		length, err := client.socket.Read(message) // TODO fix double received issue
@@ -29,23 +26,26 @@ func (client *Client) receive() {
 	}
 }
 
-func createNewConnection(usersMap userInfoMap, connectionName string,
+// main client
+func connectToNewConnection(usersMap userInfoMap, connectionName string,
 	connectedServersConnections connectionNameToClient, connectedServersPubkey connectionNameToPubkey) {
 	addConnectionSocket(usersMap, connectedServersConnections, connectionName)
 	addConnectionPubKey(usersMap, connectedServersPubkey, connectionName)
 }
 
+// main client
 func addConnectionSocket(usersMap userInfoMap, connectedServersConnections connectionNameToClient, connectionName string) {
 	if _, ok := connectedServersConnections[connectionName]; !ok {
 		serverAddress := usersMap[connectionName][AddressSpot]
 		connectionSocket, err := net.Dial("tcp", serverAddress)
 		checkErr(err)
-		newConnection := &Client{socket: connectionSocket}
+		newConnection := &Connection{socket: connectionSocket}
 		connectedServersConnections[connectionName] = newConnection
-		go newConnection.receive()
+		go newConnection.receiveAsClient()
 	}
 }
 
+// main client
 func addConnectionPubKey(usersMap userInfoMap, connectedServersPubkey connectionNameToPubkey, connectionName string) {
 	if _, ok := connectedServersPubkey[connectionName]; !ok {
 		serverPubKeyPath := usersMap[connectionName][PublicKeyPathSpot]
@@ -54,6 +54,7 @@ func addConnectionPubKey(usersMap userInfoMap, connectedServersPubkey connection
 	}
 }
 
+// only client
 func chooseNewChannel(curPath []string) string {
 	lastChannel := curPath[len(curPath)-1]
 	rand.Seed(time.Now().Unix())
@@ -62,6 +63,7 @@ func chooseNewChannel(curPath []string) string {
 	return channelOptions[n]
 }
 
+// only client
 func createCipherPathMessage(message string, destination string, manager ConnectionsManager) ([]byte, string) {
 	cipherMessage := []byte(message)
 	prevChannel := destination
@@ -82,29 +84,37 @@ func createCipherPathMessage(message string, destination string, manager Connect
 	return cipherMessage, prevChannel
 }
 
+// only client
+func getServerNameFromUser() string {
+	fmt.Println("what server you want to send your message? (currently 001 002 or 003)")
+	stdinReader := bufio.NewReader(os.Stdin)
+	serverName, _ := stdinReader.ReadString('\n')
+	serverName = strings.TrimRight(serverName, "\n")
+	return serverName
+}
+
+//only client
+func getMessageFromUser(serverName string) string {
+	fmt.Println("what is your message, for server " + serverName + "?")
+	stdinReader := bufio.NewReader(os.Stdin)
+	message, _ := stdinReader.ReadString('\n')
+	return message
+}
+
 func startClientMode(myName string, usersMap userInfoMap) {
 	fmt.Println("Starting client...")
-	var stdinReader *bufio.Reader
 	manager := createGeneralManager(usersMap, myName)
-
 	for {
 		time.Sleep(1 * time.Second)
-		fmt.Println("what server you want to send your message? (currently 001 002 or 003)")
-		stdinReader = bufio.NewReader(os.Stdin)
-		serverName, _ := stdinReader.ReadString('\n')
-		serverName = strings.TrimRight(serverName, "\n")
+		serverName := getServerNameFromUser()
 		if _, ok := usersMap[serverName]; !ok {
 			fmt.Println("The server does not exists!\n")
 			continue
 		}
-
-		fmt.Println("what is your message, for server " + serverName + "?")
-		stdinReader = bufio.NewReader(os.Stdin)
-		message, _ := stdinReader.ReadString('\n')
+		message := getMessageFromUser(serverName)
 		cipherMessage, nextChannel := createCipherPathMessage(message, serverName, manager)
-
 		if _, ok := manager.connectedServersConnections[nextChannel]; !ok {
-			createNewConnection(usersMap, nextChannel, manager.connectedServersConnections, manager.connectedServersPubkey)
+			connectToNewConnection(usersMap, nextChannel, manager.connectedServersConnections, manager.connectedServersPubkey)
 		}
 		nextChannelConnection := manager.connectedServersConnections[nextChannel]
 		nextChannelConnection.socket.Write(cipherMessage)

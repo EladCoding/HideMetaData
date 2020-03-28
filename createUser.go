@@ -9,7 +9,7 @@ func startUser(mode string, name string) {
 	usersMap := getUsersMap()
 	switch strings.ToLower(mode) {
 	case "server":
-		startServerMode(name, usersMap)
+		startServerMode(name, usersMap, false)
 	case "client":
 		startClientMode(name, usersMap)
 	case "mediator":
