@@ -1,4 +1,4 @@
-package main
+package mainpkg
 
 import (
 	"bufio"
@@ -6,7 +6,6 @@ import (
 	"math/rand"
 	"net"
 	"os"
-	"strings"
 	"time"
 )
 
@@ -86,10 +85,9 @@ func createCipherPathMessage(message string, destination string, manager Connect
 
 // only client
 func getServerNameFromUser() string {
-	fmt.Println("what server you want to send your message? (currently 001 002 or 003)")
-	stdinReader := bufio.NewReader(os.Stdin)
-	serverName, _ := stdinReader.ReadString('\n')
-	serverName = strings.TrimRight(serverName, "\n")
+	fmt.Print("what server you want to send your message? (currently 001 002 or 003):")
+	var serverName string
+	fmt.Scanln(&serverName)
 	return serverName
 }
 
@@ -108,7 +106,8 @@ func startClientMode(myName string, usersMap userInfoMap) {
 		time.Sleep(1 * time.Second)
 		serverName := getServerNameFromUser()
 		if _, ok := usersMap[serverName]; !ok {
-			fmt.Println("The server does not exists!\n")
+			fmt.Printf(serverName)
+			fmt.Printf("Server %s does not exists!\n", serverName)
 			continue
 		}
 		message := getMessageFromUser(serverName)

@@ -1,11 +1,11 @@
-package main
+package mainpkg
 
 import (
 	"fmt"
 	"strings"
 )
 
-func startUser(mode string, name string) {
+func StartUser(mode string, name string) {
 	usersMap := getUsersMap()
 	switch strings.ToLower(mode) {
 	case "server":
