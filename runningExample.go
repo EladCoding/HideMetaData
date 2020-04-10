@@ -5,12 +5,11 @@ import (
 	"encoding/gob"
 	"github.com/EladCoding/HideMetaData/mixnet"
 	"os"
-	"os/exec"
 	"time"
 )
 
 
-func runWholeMixNet() {
+func runMixNetWithoutClient() {
 	go mixnet.StartUser("server", "001")
 	time.Sleep(100*time.Millisecond)
 	go mixnet.StartUser("server", "002")
@@ -22,32 +21,11 @@ func runWholeMixNet() {
 	go mixnet.StartUser("mediator", "102")
 	time.Sleep(100*time.Millisecond)
 	go mixnet.StartUser("mediator", "101")
-	time.Sleep(100*time.Millisecond)
-	mixnet.StartUser("client", "201")
-}
-
-
-func runWholeMixNetInADiffrentProcesses() {
-	var cmd *exec.Cmd
-	cmd = exec.Command("runningExample.exe", "server 001")
-	go cmd.Run()
-	time.Sleep(time.Second)
-	cmd = exec.Command("runningExample.exe", "server 002")
-	go cmd.Run()
-	time.Sleep(time.Second)
-	cmd = exec.Command("runningExample.exe", "server 003")
-	go cmd.Run()
-	time.Sleep(time.Second)
-	cmd = exec.Command("runningExample.exe", "mediator 103")
-	go cmd.Run()
-	time.Sleep(time.Second)
-	cmd = exec.Command("runningExample.exe", "mediator 102")
-	go cmd.Run()
-	time.Sleep(time.Second)
-	cmd = exec.Command("runningExample.exe", "mediator 101")
-	go cmd.Run()
-	time.Sleep(time.Second)
-	mixnet.StartUser("client", "201")
+	for {
+		continue
+	}
+	//time.Sleep(100*time.Millisecond)
+	//mixnet.StartUser("client", "201")
 }
 
 
@@ -63,5 +41,6 @@ func main() {
 	name := os.Args[2]
 	runOneNode(mode, name)
 	//runWholeMixNet()
+	//runMixNetWithoutClient()
 	//scripts.Main()
 }

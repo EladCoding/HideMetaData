@@ -21,7 +21,7 @@ func (l *ServerListener) GetMessage(msg OnionMessage, reply *Reply) error {
 	encData := msg.Data
 	from := msg.From
 	*reply = Reply{l.name, encData}
-	symKey := DecryptKeyForKeyExchange(msg.PubKeyForSecret[0], scripts.DecodePrivateKey(userPrivKeyMap[l.name]))
+	symKey := DecryptKeyForKeyExchange(msg.PubKeyForSecret, scripts.DecodePrivateKey(userPrivKeyMap[l.name]))
 	decryptedData, err := symmetricDecryption(msg.Data, symKey)
 	scripts.CheckErrToLog(err)
 	fmt.Printf("Server %v Received Message:\nFrom: %v, Data: %v\n", l.name, from, string(decryptedData))

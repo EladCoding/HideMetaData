@@ -14,7 +14,7 @@ import (
 type OnionMessage struct {
 	From string
 	To string
-	PubKeyForSecret []ecdsa.PublicKey
+	PubKeyForSecret ecdsa.PublicKey
 	Data []byte
 }
 
@@ -39,20 +39,22 @@ func getMessageFromUser(serverName string) string {
 // only client
 func createOnionMessage(name string, serverName string, msgData string) OnionMessage {
 	var curPubKey ecdsa.PublicKey
+	var onionMsg OnionMessage
 
 	curOnionData := []byte(msgData)
 	hopesArr := append(scripts.MediatorNames, serverName)
-	pubKeysArr := make([]ecdsa.PublicKey, 0)
 	for index, _ := range hopesArr {
+		if index > 0 {
+			curOnionData = ConvertOnionMsgToBytes(onionMsg)
+		}
 		curHop := hopesArr[len(hopesArr)-index-1]
 		curOnionData, curPubKey = hybridEncription(curOnionData, curHop)
-		pubKeysArr = append(pubKeysArr, curPubKey)
-	}
-	onionMsg := OnionMessage{
-		name, // TODO check what about from
-		serverName,
-		pubKeysArr,
-		curOnionData,
+		onionMsg = OnionMessage{
+			name, // TODO check what about from
+			serverName,
+			curPubKey,
+			curOnionData,
+		}
 	}
 	return onionMsg
 }
@@ -65,8 +67,12 @@ func StartClient(name string) {
 	scripts.CheckErrToLog(err)
 	for {
 		serverName := getServerNameFromUser()
-		if !scripts.StringInSlice(serverName, scripts.ServerNames)  {
+		if !scripts.StringInSlice(serverName, scripts.ServerNames) {
 			fmt.Printf("Server %s does not exists!\n", serverName)
+			continue
+		}
+		if len(serverName) != UserNameLen {
+			fmt.Printf("Server %s size is weird!\n", serverName)
 			continue
 		}
 		msgData := getMessageFromUser(serverName)

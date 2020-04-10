@@ -17,12 +17,12 @@ var CipherRsaLen = RsaKeyBits / 8
 var AesKeyBytes = 32
 
 // general vars
-var PathLen = 3
-var UserNameLen = 3
-var AddressSpot = 0
-var PublicKeyPathSpot = 1
-var PrivateKeyPathSpot = 2
-var roundSlotTime = 15*time.Second
+const PathLen = 3
+const UserNameLen = 3
+const AddressSpot = 0
+const PublicKeyPathSpot = 1
+const PrivateKeyPathSpot = 2
+const roundSlotTime = 15*time.Second
 
 
 func readUserAddressMap() scripts.UserAddressMap { // TODO change

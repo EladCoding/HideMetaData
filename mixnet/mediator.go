@@ -32,15 +32,13 @@ func (l *MediatorListener) GetMessage(msg OnionMessage, reply *Reply) error {
 
 
 func DecryptOnionLayer(onionMsg OnionMessage, privKey *ecdsa.PrivateKey) OnionMessage {
-	pubKeys := onionMsg.PubKeyForSecret
-	curPubKey := pubKeys[len(pubKeys) - 1]
+	pubKey := onionMsg.PubKeyForSecret
 
-	symKey := DecryptKeyForKeyExchange(curPubKey, privKey)
+	symKey := DecryptKeyForKeyExchange(pubKey, privKey)
 	decryptedData, err := symmetricDecryption(onionMsg.Data, symKey)
 	scripts.CheckErrToLog(err)
 
-	onionMsg.Data = decryptedData
-	onionMsg.PubKeyForSecret = pubKeys[:len(pubKeys) - 1]
+	onionMsg = ConvertBytesToOnionMsg(decryptedData)
 	return onionMsg
 }
 
