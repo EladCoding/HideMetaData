@@ -1,60 +1,108 @@
 package mixnet
 
 import (
-	"fmt"
-	"log"
+	"bytes"
+	"encoding/gob"
+	"encoding/json"
+	"github.com/EladCoding/HideMetaData/scripts"
+	"io/ioutil"
+	"math/rand"
 	"os"
+	"time"
 )
 
-//// types
-type userInfoMap map[string][2]string
-
-//// vars
-var working_dir, _ = os.Getwd()
 // cipher vars
 var RsaKeyBits = 2048
 var CipherRsaLen = RsaKeyBits / 8
 var AesKeyBytes = 32
 
+// general vars
 var PathLen = 3
-// servers map
-var ServerPublicKeyPathFormat = working_dir + "/keys/server%s/public_key.txt"
-var ServerPrivateKeyPathFormat = working_dir + "/keys/server%s/private_key.txt"
-var ServerHost = "localhost"
-var ServerPortFormat = "9%s"
-var ServerAddressFormat = ServerHost + ":" + ServerPortFormat
-// mediators map
-var MediatorPublicKeyPathFormat = working_dir + "/keys/mediator%s/public_key.txt"
-var MediatorPrivateKeyPathFormat = working_dir + "/keys/mediator%s/private_key.txt"
-var MediatorHost = "localhost"
-var MediatorHostFormat = "8%s"
-var MediatorAddressFormat = MediatorHost + ":" + MediatorHostFormat
-// clients map
-var ClientPublicKeyPathFormat = working_dir + "/keys/client%s/public_key.txt"
-var ClientPrivateKeyPathFormat = working_dir + "/keys/client%s/private_key.txt"
-var ClientHost = "localhost"
-var ClientHostFormat = "7%s"
-var ClientAddressFormat = ClientHost + ":" + ClientHostFormat
-
-var PublicKeyPathSpot = 0
-var AddressSpot = 1
 var UserNameLen = 3
+var AddressSpot = 0
+var PublicKeyPathSpot = 1
+var PrivateKeyPathSpot = 2
+var roundSlotTime = 15*time.Second
 
-var usersMap = userInfoMap{
-	"001": {fmt.Sprintf(ServerPublicKeyPathFormat, "001"), fmt.Sprintf(ServerAddressFormat, "001")},
-	"002": {fmt.Sprintf(ServerPublicKeyPathFormat, "002"), fmt.Sprintf(ServerAddressFormat, "002")},
-	"003": {fmt.Sprintf(ServerPublicKeyPathFormat, "003"), fmt.Sprintf(ServerAddressFormat, "003")},
-	"101": {fmt.Sprintf(MediatorPublicKeyPathFormat, "101"), fmt.Sprintf(MediatorAddressFormat, "101")},
-	"102": {fmt.Sprintf(MediatorPublicKeyPathFormat, "102"), fmt.Sprintf(MediatorAddressFormat, "102")},
-	"103": {fmt.Sprintf(MediatorPublicKeyPathFormat, "103"), fmt.Sprintf(MediatorAddressFormat, "103")},
-	"201": {fmt.Sprintf(ClientPublicKeyPathFormat, "201"), fmt.Sprintf(ClientAddressFormat, "201")},
-	"202": {fmt.Sprintf(ClientPublicKeyPathFormat, "202"), fmt.Sprintf(ClientAddressFormat, "202")},
-	"203": {fmt.Sprintf(ClientPublicKeyPathFormat, "203"), fmt.Sprintf(ClientAddressFormat, "203")},
+
+func readUserAddressMap() scripts.UserAddressMap { // TODO change
+	var usersMap scripts.UserAddressMap
+	jsonFile, err := os.Open(scripts.UserAddressesMapPath)
+	scripts.CheckErrAndPanic(err)
+	defer jsonFile.Close()
+	jsonByteValue, _ := ioutil.ReadAll(jsonFile)
+	json.Unmarshal(jsonByteValue, &usersMap)
+	return usersMap
 }
 
-//// funcs
-func checkErr(err error) {
-	if err != nil {
-		log.Fatal(err)
+
+func readUserPubKeyMap() scripts.UserPublicKeyMap { // TODO change
+	var usersMap scripts.UserPublicKeyMap
+	jsonFile, err := os.Open(scripts.UserPublicKeysMapPath)
+	scripts.CheckErrAndPanic(err)
+	defer jsonFile.Close()
+	jsonByteValue, _ := ioutil.ReadAll(jsonFile)
+	json.Unmarshal(jsonByteValue, &usersMap)
+	return usersMap
+}
+
+
+func readUserPrivKeyMap() scripts.UserPrivateKeyMap { // TODO change
+	var usersMap scripts.UserPrivateKeyMap
+	jsonFile, err := os.Open(scripts.UserPrivateKeysMapPath)
+	scripts.CheckErrAndPanic(err)
+	defer jsonFile.Close()
+	jsonByteValue, _ := ioutil.ReadAll(jsonFile)
+	json.Unmarshal(jsonByteValue, &usersMap)
+	return usersMap
+}
+
+
+func shuffleMsgs(msgs []OnionMessage) ([]OnionMessage, []int) { // TODO check how to shuffle properly (cryptographlly)
+	shuffledMsgs := make([]OnionMessage, len(msgs))
+	perm := rand.Perm(len(msgs))
+	for i, v := range perm {
+		shuffledMsgs[v] = msgs[i]
 	}
+	return shuffledMsgs, perm
 }
+
+
+func reverseShufflingMsgs(msgs []OnionMessage, perm []int) []OnionMessage { // TODO check how to shuffle properly (cryptographlly)
+	reversedMsgs := make([]OnionMessage, len(msgs))
+	for i, v := range perm {
+		reversedMsgs[i] = msgs[v]
+	}
+	return reversedMsgs
+}
+
+
+func ConvertOnionMsgToBytes(onionMsg OnionMessage) []byte {
+	var inpBuf bytes.Buffer
+	enc := gob.NewEncoder(&inpBuf)
+	err := enc.Encode(onionMsg)
+	scripts.CheckErrToLog(err)
+	return inpBuf.Bytes()
+}
+
+
+func ConvertBytesToOnionMsg(onionBytes []byte) OnionMessage {
+	var outpBuf bytes.Buffer
+	var onionMsg OnionMessage
+	outpBuf.Write(onionBytes)
+	dec := gob.NewDecoder(&outpBuf) // Will read from network.
+	err := dec.Decode(&onionMsg)
+	scripts.CheckErrToLog(err)
+	return onionMsg
+}
+
+
+var userAddressesMap = readUserAddressMap()
+var userPubKeyMap = readUserPubKeyMap()
+var userPrivKeyMap = readUserPrivKeyMap()
+
+
+//var userAddressesMap scripts.UserAddressMap
+//var userPubKeyMap scripts.UserPublicKeyMap
+//var userPrivKeyMap scripts.UserPrivateKeyMap
+

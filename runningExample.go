@@ -1,52 +1,67 @@
 package main
 
 import (
-	"fmt"
-	//"github.com/EladCoding/HideMetaData/mainpkg"
+	"crypto/elliptic"
+	"encoding/gob"
 	"github.com/EladCoding/HideMetaData/mixnet"
 	"os"
+	"os/exec"
+	"time"
 )
 
 
-//func main() {
-//	if len(os.Args) < 3 {
-//		fmt.Println("Please provide mode and name.")
-//		return
-//	}
-//	go mainpkg.StartUser("server", "001")
-//	go mainpkg.StartUser("server", "002")
-//	go mainpkg.StartUser("server", "003")
-//	go mainpkg.StartUser("mediator", "101")
-//	go mainpkg.StartUser("mediator", "102")
-//	go mainpkg.StartUser("mediator", "103")
-//	mode := os.Args[1]
-//	name := os.Args[2]
-//	mainpkg.StartUser(mode, name)
-//}
+func runWholeMixNet() {
+	go mixnet.StartUser("server", "001")
+	time.Sleep(100*time.Millisecond)
+	go mixnet.StartUser("server", "002")
+	time.Sleep(100*time.Millisecond)
+	go mixnet.StartUser("server", "003")
+	time.Sleep(100*time.Millisecond)
+	go mixnet.StartUser("mediator", "103")
+	time.Sleep(100*time.Millisecond)
+	go mixnet.StartUser("mediator", "102")
+	time.Sleep(100*time.Millisecond)
+	go mixnet.StartUser("mediator", "101")
+	time.Sleep(100*time.Millisecond)
+	mixnet.StartUser("client", "201")
+}
+
+
+func runWholeMixNetInADiffrentProcesses() {
+	var cmd *exec.Cmd
+	cmd = exec.Command("runningExample.exe", "server 001")
+	go cmd.Run()
+	time.Sleep(time.Second)
+	cmd = exec.Command("runningExample.exe", "server 002")
+	go cmd.Run()
+	time.Sleep(time.Second)
+	cmd = exec.Command("runningExample.exe", "server 003")
+	go cmd.Run()
+	time.Sleep(time.Second)
+	cmd = exec.Command("runningExample.exe", "mediator 103")
+	go cmd.Run()
+	time.Sleep(time.Second)
+	cmd = exec.Command("runningExample.exe", "mediator 102")
+	go cmd.Run()
+	time.Sleep(time.Second)
+	cmd = exec.Command("runningExample.exe", "mediator 101")
+	go cmd.Run()
+	time.Sleep(time.Second)
+	mixnet.StartUser("client", "201")
+}
+
+
+func runOneNode(mode string, name string) {
+	mixnet.StartUser(mode, name)
+}
+
 
 func main() {
-	if len(os.Args) < 3 {
-		fmt.Println("Please provide mode and name.")
-		return
-	}
+	gob.Register(elliptic.P256())
+	//convertStructToBytes()
 	mode := os.Args[1]
 	name := os.Args[2]
-	if mode == "server" {
-		mixnet.StartServer(name)
-	}
-	if mode == "mediator" {
-		mixnet.StartMediator(name)
-	}
-	if mode == "client" {
-		mixnet.StartClient(name)
-	}
-	//go mixnet.StartUser("server", "001")
-	//go mixnet.StartUser("server", "002")
-	//go mixnet.StartUser("server", "003")
-	//go mixnet.StartUser("mediator", "101")
-	//go mixnet.StartUser("mediator", "102")
-	//go mixnet.StartUser("mediator", "103")
-	//mode := os.Args[1]
-	//name := os.Args[2]
-	//mixnet.StartUser(mode, name)
+	runOneNode(mode, name)
+	//runWholeMixNet()
+	//scripts.Main()
 }
