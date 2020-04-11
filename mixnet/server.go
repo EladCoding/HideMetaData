@@ -29,15 +29,19 @@ func (l *ServerListener) GetMessage(msg OnionMessage, reply *Reply) error {
 }
 
 
-func StartServer(name string) {
-	fmt.Printf("Starting Server %v...\n", name)
-	address := userAddressesMap[name]
-
+func (l *ServerListener) listenToMyAddress() {
+	address := userAddressesMap[l.name]
 	addy, err := net.ResolveTCPAddr("tcp", address)
 	scripts.CheckErrToLog(err)
 	inbound, err := net.ListenTCP("tcp", addy)
 	scripts.CheckErrToLog(err)
-	listener := ServerListener{name}
-	rpc.Register(&listener)
+	rpc.Register(l)
 	rpc.Accept(inbound)
+}
+
+
+func StartServer(name string) {
+	fmt.Printf("Starting Server %v...\n", name)
+	listener := ServerListener{name}
+	listener.listenToMyAddress()
 }

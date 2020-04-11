@@ -36,29 +36,6 @@ func getMessageFromUser(serverName string) string {
 }
 
 
-// only client
-func createOnionMessage(name string, serverName string, msgData string) OnionMessage {
-	var curPubKey ecdsa.PublicKey
-	var onionMsg OnionMessage
-
-	curOnionData := []byte(msgData)
-	hopesArr := append(scripts.MediatorNames, serverName)
-	for index, _ := range hopesArr {
-		if index > 0 {
-			curOnionData = ConvertOnionMsgToBytes(onionMsg)
-		}
-		curHop := hopesArr[len(hopesArr)-index-1]
-		curOnionData, curPubKey = hybridEncription(curOnionData, curHop)
-		onionMsg = OnionMessage{
-			name, // TODO check what about from
-			serverName,
-			curPubKey,
-			curOnionData,
-		}
-	}
-	return onionMsg
-}
-
 func StartClient(name string) {
 	fmt.Printf("Starting Client %v...\n", name)
 	mediatorAddress := userAddressesMap["101"]
@@ -77,7 +54,7 @@ func StartClient(name string) {
 		}
 		msgData := getMessageFromUser(serverName)
 		scripts.CheckErrAndPanic(err)
-		cipherMsg := createOnionMessage(name, serverName, msgData)
+		cipherMsg := createOnionMessage(name, serverName, []byte(msgData), scripts.MediatorNames)
 		var reply Reply
 		err = client.Call("MediatorListener.GetMessage", cipherMsg, &reply)
 		scripts.CheckErrToLog(err)

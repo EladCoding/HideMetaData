@@ -2,6 +2,7 @@ package mixnet
 
 import (
 	"bytes"
+	"crypto/ecdsa"
 	"encoding/gob"
 	"encoding/json"
 	"github.com/EladCoding/HideMetaData/scripts"
@@ -15,6 +16,7 @@ import (
 var RsaKeyBits = 2048
 var CipherRsaLen = RsaKeyBits / 8
 var AesKeyBytes = 32
+var fakeMsgsToAppend = 3
 
 // general vars
 const PathLen = 3
@@ -94,6 +96,41 @@ func ConvertBytesToOnionMsg(onionBytes []byte) OnionMessage {
 	err := dec.Decode(&onionMsg)
 	scripts.CheckErrToLog(err)
 	return onionMsg
+}
+
+
+func createOnionMessage(name string, serverName string, msgData []byte, mediatorsArr []string) OnionMessage {
+	var curPubKey ecdsa.PublicKey
+	var onionMsg OnionMessage
+
+	curOnionData := msgData
+	hopesArr := append(mediatorsArr, serverName)
+	for index, _ := range hopesArr {
+		if index > 0 {
+			curOnionData = ConvertOnionMsgToBytes(onionMsg)
+		}
+		curHop := hopesArr[len(hopesArr)-index-1]
+		curOnionData, curPubKey = hybridEncription(curOnionData, curHop)
+		onionMsg = OnionMessage{
+			name, // TODO check what about from
+			serverName,
+			curPubKey,
+			curOnionData,
+		}
+	}
+	return onionMsg
+}
+
+
+func appendFakeMsgs(curMsgs []OnionMessage, numOfMsgsToAppend int, name string, mediatorsLeft []string) []OnionMessage {
+	for i := 0; i < numOfMsgsToAppend; i += 1 {
+		fakeMsgData := make([]byte, 32) // TODO check size
+		rand.Read(fakeMsgData)
+		randServerName := scripts.ServerNames[rand.Intn(len(scripts.ServerNames))]
+		cipherMsg := createOnionMessage(name, randServerName, fakeMsgData, mediatorsLeft)
+		curMsgs = append(curMsgs, cipherMsg)
+	}
+	return curMsgs
 }
 
 
