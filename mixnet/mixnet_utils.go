@@ -70,8 +70,8 @@ func shuffleMsgs(msgs []OnionMessage) ([]OnionMessage, []int) { // TODO check ho
 }
 
 
-func reverseShufflingMsgs(msgs []OnionMessage, perm []int) []OnionMessage { // TODO check how to shuffle properly (cryptographlly)
-	reversedMsgs := make([]OnionMessage, len(msgs))
+func reverseShufflingReplyMsgs(msgs []scripts.EncryptedMsg, perm []int) []scripts.EncryptedMsg { // TODO check how to shuffle properly (cryptographlly)
+	reversedMsgs := make([]scripts.EncryptedMsg, len(msgs))
 	for i, v := range perm {
 		reversedMsgs[i] = msgs[v]
 	}
@@ -79,7 +79,7 @@ func reverseShufflingMsgs(msgs []OnionMessage, perm []int) []OnionMessage { // T
 }
 
 
-func ConvertOnionMsgToBytes(onionMsg OnionMessage) []byte {
+func ConvertMsgToBytes(onionMsg interface{}) scripts.EncryptedMsg {
 	var inpBuf bytes.Buffer
 	enc := gob.NewEncoder(&inpBuf)
 	err := enc.Encode(onionMsg)
@@ -88,7 +88,7 @@ func ConvertOnionMsgToBytes(onionMsg OnionMessage) []byte {
 }
 
 
-func ConvertBytesToOnionMsg(onionBytes []byte) OnionMessage {
+func ConvertBytesToOnionMsg(onionBytes scripts.EncryptedMsg) OnionMessage {
 	var outpBuf bytes.Buffer
 	var onionMsg OnionMessage
 	outpBuf.Write(onionBytes)
@@ -99,26 +99,41 @@ func ConvertBytesToOnionMsg(onionBytes []byte) OnionMessage {
 }
 
 
-func createOnionMessage(name string, serverName string, msgData []byte, mediatorsArr []string) OnionMessage {
+func ConvertBytesToReplyMsg(replyBytes scripts.EncryptedMsg) ReplyMessage {
+	var outpBuf bytes.Buffer
+	var replyMsg ReplyMessage
+	outpBuf.Write(replyBytes)
+	dec := gob.NewDecoder(&outpBuf) // Will read from network.
+	err := dec.Decode(&replyMsg)
+	scripts.CheckErrToLog(err)
+	return replyMsg
+}
+
+
+
+func createOnionMessage(name string, serverName string, msgData []byte, mediatorsArr []string) (OnionMessage, []scripts.SecretKey) {
 	var curPubKey ecdsa.PublicKey
+	var curSymKey scripts.SecretKey
+	var symKeys []scripts.SecretKey
 	var onionMsg OnionMessage
 
 	curOnionData := msgData
 	hopesArr := append(mediatorsArr, serverName)
 	for index, _ := range hopesArr {
 		if index > 0 {
-			curOnionData = ConvertOnionMsgToBytes(onionMsg)
+			curOnionData = ConvertMsgToBytes(onionMsg)
 		}
 		curHop := hopesArr[len(hopesArr)-index-1]
-		curOnionData, curPubKey = hybridEncription(curOnionData, curHop)
+		curOnionData, curPubKey, curSymKey = hybridEncription(curOnionData, curHop)
 		onionMsg = OnionMessage{
 			name, // TODO check what about from
 			serverName,
 			curPubKey,
 			curOnionData,
 		}
+		symKeys = append(symKeys, curSymKey)
 	}
-	return onionMsg
+	return onionMsg, symKeys
 }
 
 
@@ -127,10 +142,22 @@ func appendFakeMsgs(curMsgs []OnionMessage, numOfMsgsToAppend int, name string, 
 		fakeMsgData := make([]byte, 32) // TODO check size
 		rand.Read(fakeMsgData)
 		randServerName := scripts.ServerNames[rand.Intn(len(scripts.ServerNames))]
-		cipherMsg := createOnionMessage(name, randServerName, fakeMsgData, mediatorsLeft)
+		cipherMsg, _ := createOnionMessage(name, randServerName, fakeMsgData, mediatorsLeft)
 		curMsgs = append(curMsgs, cipherMsg)
 	}
 	return curMsgs
+}
+
+
+func DecryptOnionLayer(onionMsg OnionMessage, privKey *ecdsa.PrivateKey) (OnionMessage, []byte) {
+	pubKey := onionMsg.PubKeyForSecret
+
+	symKey := DecryptKeyForKeyExchange(pubKey, privKey)
+	decryptedData, err := symmetricDecryption(onionMsg.Data, symKey)
+	scripts.CheckErrToLog(err)
+
+	onionMsg = ConvertBytesToOnionMsg(decryptedData)
+	return onionMsg, symKey
 }
 
 

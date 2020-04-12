@@ -8,6 +8,7 @@ import (
 	"log"
 	"net/rpc"
 	"os"
+	"time"
 )
 
 
@@ -54,10 +55,17 @@ func StartClient(name string) {
 		}
 		msgData := getMessageFromUser(serverName)
 		scripts.CheckErrAndPanic(err)
-		cipherMsg := createOnionMessage(name, serverName, []byte(msgData), scripts.MediatorNames)
-		var reply Reply
-		err = client.Call("MediatorListener.GetMessage", cipherMsg, &reply)
+		cipherMsg, symKeys := createOnionMessage(name, serverName, []byte(msgData), scripts.MediatorNames)
+		var reply scripts.EncryptedMsg
+		err = client.Call("CoordinatorListener.GetMessage", cipherMsg, &reply)
 		scripts.CheckErrToLog(err)
-		log.Printf("Reply: %v, From: %v, Data: %v\n", reply, reply.From, reply.Data)
+		for index, _ := range symKeys {
+			symKey := symKeys[len(symKeys)-index-1]
+			reply, err = symmetricDecryption(reply, symKey)
+			scripts.CheckErrAndPanic(err)
+		}
+		replyMsg := ConvertBytesToReplyMsg(reply)
+		log.Printf("Reply: From: %v, Data: %v", replyMsg.From, string(replyMsg.Data))
+		time.Sleep(100*time.Millisecond)
 	}
 }

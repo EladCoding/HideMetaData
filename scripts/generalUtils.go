@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"io/ioutil"
 	"log"
+	"net/rpc"
 	"os"
 	"path"
 	"path/filepath"
@@ -16,6 +17,9 @@ import (
 type UserAddressMap map[string]string
 type UserPublicKeyMap map[string]string
 type UserPrivateKeyMap map[string]string
+type ClientsMap map[string]*rpc.Client
+type SecretKey []byte
+type EncryptedMsg []byte
 
 var WorkingDir, _ = os.Getwd()
 var AppendixPath = path.Join(WorkingDir, "appendix")
@@ -26,7 +30,8 @@ var PortFormat = "8%s"
 var AddressFormat = "localhost:" + PortFormat
 
 var ServerNames = []string{"001", "002", "003"}
-var MediatorNames = []string{"101", "102", "103"}
+//var MediatorNames = []string{"101", "102", "103"}
+var MediatorNames = []string{"101", "103"}
 var ClientNames = []string{"201", "202", "203"}
 var UserNames = append(append(ServerNames, MediatorNames...), ClientNames...)
 

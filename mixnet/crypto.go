@@ -33,12 +33,12 @@ func DecryptKeyForKeyExchange(sourcePubKey ecdsa.PublicKey, privKey *ecdsa.Priva
 }
 
 
-func hybridEncription(plaintext []byte, destName string) ([]byte, ecdsa.PublicKey) {
+func hybridEncription(plaintext []byte, destName string) ([]byte, ecdsa.PublicKey, scripts.SecretKey) {
 	destPubKey := scripts.DecodePublicKey(userPubKeyMap[destName])
 	sharedSecret, pubKey := EncryptKeyForKeyExchange(*destPubKey)
 	cipherMsgData, err := symmetricEncryption(plaintext, sharedSecret)
 	scripts.CheckErrToLog(err)
-	return cipherMsgData, pubKey
+	return cipherMsgData, pubKey, sharedSecret
 }
 
 

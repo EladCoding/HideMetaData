@@ -12,18 +12,18 @@ func StartUser(mode string, name string) {
 		for _, serverName := range scripts.ServerNames {
 			if name == serverName {
 				StartServer(name)
+				return
 			}
-			break
 		}
 		fmt.Println("Server name does not Exists!")
 	case "mediator":
 		switch name {
 		case "101":
-			StartMediator(name, 1, "102", true, false)
-		case "102":
-			StartMediator(name, 2, "103", false, false)
+			StartCoordinator(name, 1, "103")
+		//case "102":
+		//	StartMediator(name, 2, "103", false, false)
 		case "103":
-			StartMediator(name, 3, "001", false, true)
+			StartDistributor(name, 3)
 		default:
 			fmt.Println("Mediator name does not Exists!")
 		}

@@ -4,7 +4,6 @@ import (
 	"crypto/elliptic"
 	"encoding/gob"
 	"github.com/EladCoding/HideMetaData/mixnet"
-	"os"
 	"time"
 )
 
@@ -18,14 +17,13 @@ func runMixNetWithoutClient() {
 	time.Sleep(100*time.Millisecond)
 	go mixnet.StartUser("mediator", "103")
 	time.Sleep(100*time.Millisecond)
-	go mixnet.StartUser("mediator", "102")
-	time.Sleep(100*time.Millisecond)
-	go mixnet.StartUser("mediator", "101")
-	for {
-		continue
-	}
+	//go mixnet.StartUser("mediator", "102")
 	//time.Sleep(100*time.Millisecond)
-	//mixnet.StartUser("client", "201")
+	go mixnet.StartUser("mediator", "101")
+	time.Sleep(100*time.Millisecond)
+	//for {
+	//	continue
+	//}
 }
 
 
@@ -36,11 +34,11 @@ func runOneNode(mode string, name string) {
 
 func main() {
 	gob.Register(elliptic.P256())
-	//convertStructToBytes()
-	mode := os.Args[1]
-	name := os.Args[2]
+	runMixNetWithoutClient()
+	mode := "client"
+	name := "201"
 	runOneNode(mode, name)
+	//convertStructToBytes()
 	//runWholeMixNet()
-	//runMixNetWithoutClient()
 	//scripts.Main()
 }
