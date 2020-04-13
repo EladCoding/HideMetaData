@@ -8,6 +8,7 @@ import (
 	"log"
 	"net/rpc"
 	"os"
+	"strings"
 	"time"
 )
 
@@ -33,6 +34,7 @@ func getMessageFromUser(serverName string) string {
 	fmt.Println("what is your message, for server " + serverName + "?")
 	stdinReader := bufio.NewReader(os.Stdin)
 	message, _ := stdinReader.ReadString('\n')
+	message = strings.TrimRight(message, "\n")
 	return message
 }
 
@@ -40,17 +42,18 @@ func getMessageFromUser(serverName string) string {
 func StartClient(name string) {
 	fmt.Printf("Starting Client %v...\n", name)
 	mediatorAddress := userAddressesMap["101"]
-	fmt.Printf("name: %v. mediatorAddress: %v\n", name, mediatorAddress)
 	client, err := rpc.Dial("tcp", mediatorAddress)
 	scripts.CheckErrToLog(err)
 	for {
 		serverName := getServerNameFromUser()
-		if !scripts.StringInSlice(serverName, scripts.ServerNames) {
-			fmt.Printf("Server %s does not exists!\n", serverName)
-			continue
-		}
-		if len(serverName) != UserNameLen {
+		if serverName == "exit" {
+			fmt.Printf("Exiting!\n")
+			return
+		} else if len(serverName) != UserNameLen {
 			fmt.Printf("Server %s size is weird!\n", serverName)
+			continue
+		} else if !scripts.StringInSlice(serverName, scripts.ServerNames) {
+			fmt.Printf("Server %s does not exists!\n", serverName)
 			continue
 		}
 		msgData := getMessageFromUser(serverName)
@@ -65,7 +68,7 @@ func StartClient(name string) {
 			scripts.CheckErrAndPanic(err)
 		}
 		replyMsg := ConvertBytesToReplyMsg(reply)
-		log.Printf("Reply: From: %v, Data: %v", replyMsg.From, string(replyMsg.Data))
+		log.Printf("Client %v got reply message:\nFrom: %v, Data: %v\n", name, replyMsg.From, string(replyMsg.Data))
 		time.Sleep(100*time.Millisecond)
 	}
 }

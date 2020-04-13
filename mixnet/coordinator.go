@@ -3,6 +3,7 @@ package mixnet
 import (
 	"fmt"
 	"github.com/EladCoding/HideMetaData/scripts"
+	"log"
 	"net"
 	"net/rpc"
 	"sync"
@@ -15,9 +16,10 @@ type CoordinatorListener struct {
 	num int
 	msgMutex  *sync.Mutex
 	roundMsgs []OnionMessage
-	roundSymKeys [][]byte
+	roundSymKeys []scripts.SecretKey
 	roundFinished *sync.Cond
 	roundRepliedMsgs []scripts.EncryptedMsg
+	nextHop *rpc.Client
 }
 
 
@@ -31,11 +33,10 @@ func (l *CoordinatorListener) GetMessage(msg OnionMessage, reply *scripts.Encryp
 
 
 func (l *CoordinatorListener) readMessage(msg OnionMessage) (OnionMessage, int) {
-	encData := msg.Data
 	from := msg.From
 	msg, symKey := DecryptOnionLayer(msg, scripts.DecodePrivateKey(userPrivKeyMap[l.name]))
 	to := msg.To
-	fmt.Printf("Mediator %v Received OnionMessage:\nFrom: %v, To: %v, Data: %x\n", l.name, from, to, encData)
+	log.Printf("Coordinator %v Received OnionMessage:\nFrom: %v, To: %v\n", l.name, from, to)
 	msgIndex := l.appendMsgToRound(msg, symKey)
 	return msg, msgIndex
 }
@@ -51,18 +52,18 @@ func (l *CoordinatorListener) appendMsgToRound(msg OnionMessage, msgSymKey []byt
 }
 
 
-func (l *CoordinatorListener) readRoundMsgs() ([]OnionMessage, [][]byte) {
+func (l *CoordinatorListener) readRoundMsgs() ([]OnionMessage, []scripts.SecretKey) {
 	curRoundMsgs := l.roundMsgs
 	l.roundMsgs = make([]OnionMessage, 0)
 	curRoundSymKeys := l.roundSymKeys
-	l.roundSymKeys = make([][]byte, 0)
+	l.roundSymKeys = make([]scripts.SecretKey, 0)
 	return curRoundMsgs, curRoundSymKeys
 }
 
 
 func (l *CoordinatorListener) listenToMyAddress() {
 	address := userAddressesMap[l.name]
-	fmt.Printf("name: %v. address: %v\n", l.name, address)
+	fmt.Printf("name: %v. listen to address: %v\n", l.name, address)
 	addy, err := net.ResolveTCPAddr("tcp", address)
 	scripts.CheckErrToLog(err)
 	inbound, err := net.ListenTCP("tcp", addy)
@@ -72,7 +73,32 @@ func (l *CoordinatorListener) listenToMyAddress() {
 }
 
 
-func (l *CoordinatorListener) coordinateRounds(client *rpc.Client) {
+func (l *CoordinatorListener) sendRoundMessagesToNextHop(nextHop *rpc.Client, curRoundMsgs []OnionMessage, curRoundSymKeys []scripts.SecretKey) []scripts.EncryptedMsg {
+	var curRoundRepliedMsgs []scripts.EncryptedMsg
+	roundMsgsLen := len(curRoundMsgs)
+	if len(curRoundMsgs) == 0 { // TODO remove from here
+		return nil
+	}
+
+	// TODO random number of fakes
+	curRoundMsgs = appendFakeMsgs(curRoundMsgs, fakeMsgsToAppend, l.name, scripts.MediatorNames[l.num:])
+
+	curRoundShuffledMsgs, curRoundPerm := shuffleMsgs(curRoundMsgs)
+
+	err := nextHop.Call("MediatorListener.GetBunchOfMessages", curRoundShuffledMsgs, &curRoundRepliedMsgs)
+	scripts.CheckErrToLog(err)
+
+	unShuffledCurRoundRepliedMsgs := reverseShufflingReplyMsgs(curRoundRepliedMsgs, curRoundPerm)[:roundMsgsLen]
+
+	for index, msg := range unShuffledCurRoundRepliedMsgs {
+		unShuffledCurRoundRepliedMsgs[index], err = symmetricEncryption(msg, curRoundSymKeys[index])
+		scripts.CheckErrAndPanic(err)
+	}
+	return unShuffledCurRoundRepliedMsgs
+}
+
+
+func (l *CoordinatorListener) coordinateRounds() {
 	nextRound := time.Now().Add(roundSlotTime) // TODO check what define round
 	roundNumber := 1
 	for { // for each round
@@ -81,28 +107,10 @@ func (l *CoordinatorListener) coordinateRounds(client *rpc.Client) {
 			time.Sleep(timeUntilNextRound)
 			//continue // TODO check if needed
 		}
-		l.msgMutex.Lock()
 		nextRound = time.Now().Add(roundSlotTime)
-		curRoundMsgs, curRoundSymKeys := l.readRoundMsgs() //TODO return this and use keys
-		//curRoundMsgs = appendFakeMsgs(curRoundMsgs, fakeMsgsToAppend, l.name, scripts.MediatorNames[l.num:])
-		// TODO random number of fakes
-		if len(curRoundMsgs) == 0 { // TODO remove from here
-			l.msgMutex.Unlock()
-			continue
-		}
-
-		curRoundShuffledMsgs, curRoundPerm := shuffleMsgs(curRoundMsgs)
-
-		var curRoundRepliedMsgs []scripts.EncryptedMsg
-		err := client.Call("DistributorListener.GetBunchOfMessages", curRoundShuffledMsgs, &curRoundRepliedMsgs)
-		scripts.CheckErrToLog(err)
-		unShuffledCurRoundRepliedMsgs := reverseShufflingReplyMsgs(curRoundRepliedMsgs, curRoundPerm) // TODO use curRoundPerm for reply
-
-		for index, msg := range unShuffledCurRoundRepliedMsgs {
-			unShuffledCurRoundRepliedMsgs[index], err = symmetricEncryption(msg, curRoundSymKeys[index])
-			scripts.CheckErrAndPanic(err)
-		}
-		l.roundRepliedMsgs = unShuffledCurRoundRepliedMsgs
+		l.msgMutex.Lock()
+		curRoundMsgs, curRoundSymKeys := l.readRoundMsgs()
+		l.roundRepliedMsgs = l.sendRoundMessagesToNextHop(l.nextHop, curRoundMsgs, curRoundSymKeys)
 		l.roundFinished.Broadcast()
 		l.msgMutex.Unlock()
 	}
@@ -110,13 +118,13 @@ func (l *CoordinatorListener) coordinateRounds(client *rpc.Client) {
 
 
 func StartCoordinator(name string, num int, nextHopName string) {
-	fmt.Printf("Starting Mediator %v...\n", name)
-	var client *rpc.Client
+	fmt.Printf("Starting Coordinator %v...\n", name)
+	var nextHop *rpc.Client
 	var err error
 	mycond := sync.NewCond(&sync.Mutex{})
 	mycond.L.Lock()
 	nextHopAddress := userAddressesMap[nextHopName]
-	client, err = rpc.Dial("tcp", nextHopAddress)
+	nextHop, err = rpc.Dial("tcp", nextHopAddress)
 	scripts.CheckErrToLog(err)
 
 	// listen to address
@@ -125,10 +133,11 @@ func StartCoordinator(name string, num int, nextHopName string) {
 		num,
 		&sync.Mutex{},
 		make([]OnionMessage, 0),
-		make([][]byte, 0),
+		make([]scripts.SecretKey, 0),
 		mycond,
 		make([]scripts.EncryptedMsg, 0),
+		nextHop,
 	}
 	listener.listenToMyAddress()
-	listener.coordinateRounds(client)
+	listener.coordinateRounds()
 }

@@ -3,6 +3,7 @@ package mixnet
 import (
 	"fmt"
 	"github.com/EladCoding/HideMetaData/scripts"
+	"log"
 	"net"
 	"net/rpc"
 	"sync"
@@ -23,27 +24,47 @@ type DistributorListener struct {
 
 
 func (l *DistributorListener) readMessage(msg OnionMessage) (OnionMessage, int, []byte) {
-	encData := msg.Data
 	from := msg.From
 	msg, symKey := DecryptOnionLayer(msg, scripts.DecodePrivateKey(userPrivKeyMap[l.name]))
 	to := msg.To
-	fmt.Printf("Mediator %v Received OnionMessage:\nFrom: %v, To: %v, Data: %x\n", l.name, from, to, encData)
+	log.Printf("Distributor %v Received OnionMessage:\nFrom: %v, To: %v\n", l.name, from, to)
 	msgIndex := l.appendMsgToRound(msg, symKey)
 	return msg, msgIndex, symKey
 }
 
 
 func (l *DistributorListener) GetBunchOfMessages(msgs []OnionMessage, replies *[]scripts.EncryptedMsg) error {
+	var err error
+	roundMsgsLen := len(msgs)
+	allReplies := make([]scripts.EncryptedMsg, 0)
+	decMsgs := make([]OnionMessage, 0)
+	symKeys := make([]scripts.SecretKey, 0)
 	for _, msg := range msgs {
 		decMsg, _, symKey := l.readMessage(msg)
-		var reply *scripts.EncryptedMsg
-		destinitionServer := decMsg.To
-		client := l.clients[destinitionServer]
-		err := client.Call("ServerListener.GetMessage", decMsg, &reply)
-		scripts.CheckErrToLog(err)
-		*reply, err = symmetricEncryption(*reply, symKey)
-		*replies = append(*replies, *reply)
+		decMsgs = append(decMsgs, decMsg)
+		symKeys = append(symKeys, symKey)
 	}
+
+	msgsToSend := appendFakeMsgs(decMsgs, fakeMsgsToAppend, l.name, scripts.MediatorNames[l.num:])
+	shuffledMsgsToSend, curRoundPerm := shuffleMsgs(msgsToSend)
+
+	for _, msg := range shuffledMsgsToSend {
+		var reply *scripts.EncryptedMsg
+		destinitionServer := msg.To
+		client := l.clients[destinitionServer]
+		err := client.Call("ServerListener.GetMessage", msg, &reply)
+		scripts.CheckErrToLog(err)
+		allReplies = append(allReplies, *reply)
+	}
+
+	unShuffledCurRoundRepliedMsgs := reverseShufflingReplyMsgs(allReplies, curRoundPerm)[:roundMsgsLen]
+
+	for index, msg := range unShuffledCurRoundRepliedMsgs {
+		unShuffledCurRoundRepliedMsgs[index], err = symmetricEncryption(msg, symKeys[index])
+		scripts.CheckErrAndPanic(err)
+	}
+
+	*replies = unShuffledCurRoundRepliedMsgs
 	time.Sleep(100*time.Millisecond)
 	return nil
 }
@@ -71,7 +92,7 @@ func (l *DistributorListener) readRoundMsgs() ([]OnionMessage, [][]byte) {
 
 func (l *DistributorListener) listenToMyAddress() {
 	address := userAddressesMap[l.name]
-	fmt.Printf("name: %v. address: %v\n", l.name, address)
+	fmt.Printf("name: %v. listen to address: %v\n", l.name, address)
 	addy, err := net.ResolveTCPAddr("tcp", address)
 	scripts.CheckErrToLog(err)
 	inbound, err := net.ListenTCP("tcp", addy)
@@ -82,7 +103,7 @@ func (l *DistributorListener) listenToMyAddress() {
 
 
 func StartDistributor(name string, num int) {
-	fmt.Printf("Starting Mediator %v...\n", name)
+	fmt.Printf("Starting Distributor %v...\n", name)
 	var client *rpc.Client
 	var clients map[string]*rpc.Client
 	var err error

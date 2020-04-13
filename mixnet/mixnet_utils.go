@@ -16,7 +16,7 @@ import (
 var RsaKeyBits = 2048
 var CipherRsaLen = RsaKeyBits / 8
 var AesKeyBytes = 32
-var fakeMsgsToAppend = 3
+var fakeMsgsToAppend = 1
 
 // general vars
 const PathLen = 3
@@ -24,7 +24,7 @@ const UserNameLen = 3
 const AddressSpot = 0
 const PublicKeyPathSpot = 1
 const PrivateKeyPathSpot = 2
-const roundSlotTime = 15*time.Second
+const roundSlotTime = 5*time.Second
 
 
 func readUserAddressMap() scripts.UserAddressMap { // TODO change
@@ -141,7 +141,8 @@ func appendFakeMsgs(curMsgs []OnionMessage, numOfMsgsToAppend int, name string, 
 	for i := 0; i < numOfMsgsToAppend; i += 1 {
 		fakeMsgData := make([]byte, 32) // TODO check size
 		rand.Read(fakeMsgData)
-		randServerName := scripts.ServerNames[rand.Intn(len(scripts.ServerNames))]
+		//randServerName := scripts.ServerNames[rand.Intn(len(scripts.ServerNames))] // TODO back this when release (commented for debugging)
+		randServerName := "001"
 		cipherMsg, _ := createOnionMessage(name, randServerName, fakeMsgData, mediatorsLeft)
 		curMsgs = append(curMsgs, cipherMsg)
 	}
