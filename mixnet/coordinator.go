@@ -34,9 +34,10 @@ func (l *CoordinatorListener) GetMessage(msg OnionMessage, reply *scripts.Encryp
 
 func (l *CoordinatorListener) readMessage(msg OnionMessage) (OnionMessage, int) {
 	from := msg.From
+	encMsg := msg
 	msg, symKey := DecryptOnionLayer(msg, scripts.DecodePrivateKey(userPrivKeyMap[l.name]))
 	to := msg.To
-	log.Printf("Coordinator %v Received OnionMessage:\nFrom: %v, To: %v\n", l.name, from, to)
+	log.Printf("Coordinator %v Received OnionMessage:\nFrom: %v, To: %v, len: %v\n", l.name, from, to, len(encMsg.Data))
 	msgIndex := l.appendMsgToRound(msg, symKey)
 	return msg, msgIndex
 }

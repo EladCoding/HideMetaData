@@ -22,6 +22,7 @@ type ReplyMessage struct {
 
 func (l *ServerListener) GetMessage(msg OnionMessage, reply *scripts.EncryptedMsg) error {
 	from := msg.From
+	log.Printf("Server %v Received OnionMessage:\nFrom: %v, len: %v\n", l.name, from, len(msg.Data))
 	symKey := DecryptKeyForKeyExchange(msg.PubKeyForSecret, scripts.DecodePrivateKey(userPrivKeyMap[l.name]))
 	decryptedData, err := symmetricDecryption(msg.Data, symKey)
 	scripts.CheckErrToLog(err)

@@ -22,10 +22,10 @@ type SecretKey []byte
 type EncryptedMsg []byte
 
 var WorkingDir, _ = os.Getwd()
-var AppendixPath = path.Join(WorkingDir, "appendix")
-var UserAddressesMapPath = path.Join(AppendixPath, "userAddressesMap.json")
-var UserPublicKeysMapPath = path.Join(AppendixPath, "userPublicKeysMap.json")
-var UserPrivateKeysMapPath = path.Join(AppendixPath, "userPrivateKeysMap.json")
+var ExternalsPath = path.Join(WorkingDir, "externals")
+var UserAddressesMapPath = path.Join(ExternalsPath, "userAddressesMap.json")
+var UserPublicKeysMapPath = path.Join(ExternalsPath, "userPublicKeysMap.json")
+var UserPrivateKeysMapPath = path.Join(ExternalsPath, "userPrivateKeysMap.json")
 var PortFormat = "8%s"
 var AddressFormat = "localhost:" + PortFormat
 

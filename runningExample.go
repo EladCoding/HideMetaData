@@ -4,6 +4,7 @@ import (
 	"crypto/elliptic"
 	"encoding/gob"
 	"github.com/EladCoding/HideMetaData/mixnet"
+	"github.com/EladCoding/HideMetaData/scripts"
 	"time"
 )
 
@@ -38,6 +39,7 @@ func runClient() {
 
 func main() {
 	gob.Register(elliptic.P256())
+	scripts.CreateUsersMap()
 	runMixNetWithoutClients()
 	runClient()
 }

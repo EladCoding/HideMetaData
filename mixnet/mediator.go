@@ -25,9 +25,10 @@ type MediatorListener struct {
 
 func (l *MediatorListener) readMessage(msg OnionMessage) (OnionMessage, int, scripts.SecretKey) {
 	from := msg.From
+	encMsg := msg
 	msg, symKey := DecryptOnionLayer(msg, scripts.DecodePrivateKey(userPrivKeyMap[l.name]))
 	to := msg.To
-	log.Printf("Mediator %v Received OnionMessage:\nFrom: %v, To: %v\n", l.name, from, to)
+	log.Printf("Mediator %v Received OnionMessage:\nFrom: %v, To: %v, len: %v\n", l.name, from, to, len(encMsg.Data))
 	msgIndex := l.appendMsgToRound(msg, symKey)
 	return msg, msgIndex, symKey
 }

@@ -17,7 +17,7 @@ func GenerateAsymmetricKeyPair() (*ecdsa.PrivateKey, ecdsa.PublicKey) {
 }
 
 
-func createUsersMap() {
+func CreateUsersMap() {
 	userAddresses := make(UserAddressMap, 0)
 	userPublicKeys := make(UserPublicKeyMap, 0)
 	userPrivateKeys := make(UserPrivateKeyMap, 0)
@@ -36,11 +36,4 @@ func createUsersMap() {
 	userPrivateKeysjsonData, err := json.MarshalIndent(userPrivateKeys, "", "\t")
 	CheckErrAndPanic(err)
 	WriteToFile(UserPrivateKeysMapPath, userPrivateKeysjsonData)
-}
-
-
-func Main() {
-	//createUsersMap()
-	//testEnc()
-	return
 }
