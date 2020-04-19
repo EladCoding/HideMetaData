@@ -26,6 +26,8 @@ func (l *ServerListener) GetMessage(msg OnionMessage, reply *scripts.EncryptedMs
 	symKey := DecryptKeyForKeyExchange(msg.PubKeyForSecret, scripts.DecodePrivateKey(userPrivKeyMap[l.name]))
 	decryptedData, err := symmetricDecryption(msg.Data, symKey)
 	scripts.CheckErrToLog(err)
+	decryptedData, err = pkcs7strip(decryptedData, MsgBytes)
+	scripts.CheckErrToLog(err)
 	log.Printf("Server %v Received Message:\nFrom: %v, Data: %v\n", l.name, from, string(decryptedData))
 	replyMsg := ReplyMessage{
 		l.name, // TODO check what about from

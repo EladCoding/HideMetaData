@@ -2,4 +2,4 @@ module github.com/EladCoding/HideMetaData
 
 go 1.14
 
-require github.com/aead/ecdh v0.2.0
+require github.com/gookit/color v1.2.4

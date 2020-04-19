@@ -6,17 +6,20 @@ import (
 	"encoding/gob"
 	"encoding/json"
 	"github.com/EladCoding/HideMetaData/scripts"
+	"github.com/gookit/color"
 	"io/ioutil"
 	"math/rand"
 	"os"
 	"time"
 )
 
+
 // cipher vars
 var RsaKeyBits = 2048
 var CipherRsaLen = RsaKeyBits / 8
 var AesKeyBytes = 32
-var fakeMsgsToAppend = 0
+var MsgBytes = 32  // TODO check size
+var fakeMsgsToAppend = 1
 
 // general vars
 const PathLen = 3
@@ -139,8 +142,8 @@ func createOnionMessage(name string, serverName string, msgData []byte, mediator
 
 func appendFakeMsgs(curMsgs []OnionMessage, numOfMsgsToAppend int, name string, mediatorsLeft []string) []OnionMessage {
 	for i := 0; i < numOfMsgsToAppend; i += 1 {
-		fakeMsgData := make([]byte, 32) // TODO check size
-		rand.Read(fakeMsgData)
+		fakeMsgData, err := pkcs7padding([]byte("Fake"),MsgBytes)
+		scripts.CheckErrToLog(err)
 		//randServerName := scripts.ServerNames[rand.Intn(len(scripts.ServerNames))] // TODO back this when release (commented for debugging)
 		randServerName := "001"
 		cipherMsg, _ := createOnionMessage(name, randServerName, fakeMsgData, mediatorsLeft)

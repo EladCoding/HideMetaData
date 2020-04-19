@@ -31,11 +31,17 @@ func getServerNameFromUser() string {
 
 //only client
 func getMessageFromUser(serverName string) string {
-	fmt.Println("what is your message, for server " + serverName + "?")
-	stdinReader := bufio.NewReader(os.Stdin)
-	message, _ := stdinReader.ReadString('\n')
-	message = strings.TrimRight(message, "\n")
-	return message
+	for {
+		fmt.Println("what is your message, for server " + serverName + "?")
+		stdinReader := bufio.NewReader(os.Stdin)
+		message, _ := stdinReader.ReadString('\n')
+		message = strings.TrimRight(message, "\n")
+		if msgLen := len([]byte(message)); msgLen > MsgBytes {
+			fmt.Printf("Message len is too long (%d). max len is %d\n", msgLen, MsgBytes)
+		} else {
+			return message
+		}
+	}
 }
 
 
@@ -57,8 +63,10 @@ func StartClient(name string) {
 			continue
 		}
 		msgData := getMessageFromUser(serverName)
+		padMessage, err := pkcs7padding([]byte(msgData), MsgBytes)
+		scripts.CheckErrToLog(err)
 		scripts.CheckErrAndPanic(err)
-		cipherMsg, symKeys := createOnionMessage(name, serverName, []byte(msgData), scripts.MediatorNames)
+		cipherMsg, symKeys := createOnionMessage(name, serverName, padMessage, scripts.MediatorNames)
 		var reply scripts.EncryptedMsg
 		err = client.Call("CoordinatorListener.GetMessage", cipherMsg, &reply)
 		scripts.CheckErrToLog(err)
