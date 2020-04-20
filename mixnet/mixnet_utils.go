@@ -6,7 +6,6 @@ import (
 	"encoding/gob"
 	"encoding/json"
 	"github.com/EladCoding/HideMetaData/scripts"
-	"github.com/gookit/color"
 	"io/ioutil"
 	"math/rand"
 	"os"
