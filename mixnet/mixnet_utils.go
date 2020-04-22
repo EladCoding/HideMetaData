@@ -17,7 +17,8 @@ import (
 var RsaKeyBits = 2048
 var CipherRsaLen = RsaKeyBits / 8
 var AesKeyBytes = 32
-var MsgBytes = 32  // TODO check size
+var MsgBytes = 256  // TODO check size
+var maxUserMsgSize = MsgBytes - 1
 var fakeMsgsToAppend = 1
 
 // general vars
