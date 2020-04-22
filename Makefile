@@ -4,7 +4,7 @@ GOCMD=go
 GOBUILD=$(GOCMD) build
 GOGET=$(GOCMD) get
 GOCLEAN=$(GOCMD) clean
-BINARY_NAME=bin\mybinary.exe
+BINARY_NAME=bin/mybinary.exe
 
 all: build
 build:
