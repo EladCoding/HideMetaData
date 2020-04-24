@@ -74,7 +74,6 @@ func (l *MediatorListener) GetBunchOfMessages(msgs []OnionMessage, replies *[]sc
 }
 
 
-
 func (l *MediatorListener) appendMsgToRound(msg OnionMessage, msgSymKey []byte) int {
 	l.msgMutex.Lock()
 	msgIndex := len(l.roundMsgs)

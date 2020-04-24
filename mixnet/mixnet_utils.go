@@ -28,6 +28,7 @@ const AddressSpot = 0
 const PublicKeyPathSpot = 1
 const PrivateKeyPathSpot = 2
 const roundSlotTime = 5*time.Second
+const minRoundSlotTime = roundSlotTime / 2
 
 
 func readUserAddressMap() scripts.UserAddressMap { // TODO change
@@ -111,7 +112,6 @@ func ConvertBytesToReplyMsg(replyBytes scripts.EncryptedMsg) ReplyMessage {
 	scripts.CheckErrToLog(err)
 	return replyMsg
 }
-
 
 
 func createOnionMessage(name string, serverName string, msgData []byte, mediatorsArr []string) (OnionMessage, []scripts.SecretKey) {
