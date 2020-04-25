@@ -1,4 +1,4 @@
-package scripts
+package mixnet
 
 import (
 	"crypto/ecdsa"
@@ -11,7 +11,6 @@ import (
 	"os"
 	"path"
 	"path/filepath"
-	//"github.com/EladCoding/HideMetaData/mainpkg"
 )
 
 type UserAddressMap map[string]string

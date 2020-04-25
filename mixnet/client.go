@@ -4,7 +4,6 @@ import (
 	"bufio"
 	"crypto/ecdsa"
 	"fmt"
-	"github.com/EladCoding/HideMetaData/scripts"
 	"log"
 	"net/rpc"
 	"os"
@@ -50,7 +49,7 @@ func convertStringToMessages(message string) [][]byte {
 		}
 		unPaddedMsg := message[startMsgSpot:endMsgSpot]
 		paddedMsg, err := pkcs7padding([]byte(unPaddedMsg),MsgBytes)
-		scripts.CheckErrToLog(err)
+		CheckErrToLog(err)
 		splittedMsg = append(splittedMsg, paddedMsg)
 	}
 	return splittedMsg
@@ -61,13 +60,13 @@ func StartClient(name string) {
 	fmt.Printf("Starting Client %v...\n", name)
 	mediatorAddress := userAddressesMap["101"]
 	client, err := rpc.Dial("tcp", mediatorAddress)
-	scripts.CheckErrToLog(err)
+	CheckErrToLog(err)
 	for {
 		serverName := getServerNameFromUser()
 		if serverName == "exit" {
 			fmt.Printf("Exiting!\n")
 			return
-		} else if !scripts.StringInSlice(serverName, scripts.ServerNames) {
+		} else if !StringInSlice(serverName, ServerNames) {
 			fmt.Printf("Server %s does not exists!\n", serverName)
 			continue
 		}
@@ -77,14 +76,14 @@ func StartClient(name string) {
 		}
 		userSplittedMsg := getMessageFromUser(serverName)
 		for _, msg := range userSplittedMsg {
-			cipherMsg, symKeys := createOnionMessage(name, serverName, msg, scripts.MediatorNames)
-			var reply scripts.EncryptedMsg
+			cipherMsg, symKeys := createOnionMessage(name, serverName, msg, MediatorNames)
+			var reply EncryptedMsg
 			err = client.Call("CoordinatorListener.GetMessageFromClient", cipherMsg, &reply)
-			scripts.CheckErrToLog(err)
+			CheckErrToLog(err)
 			for index, _ := range symKeys {
 				symKey := symKeys[len(symKeys)-index-1]
 				reply, err = symmetricDecryption(reply, symKey)
-				scripts.CheckErrAndPanic(err)
+				CheckErrAndPanic(err)
 			}
 			replyMsg := ConvertBytesToReplyMsg(reply)
 			log.Printf("Client %v got reply message:\nFrom: %v, Data: %v\n", name, replyMsg.From, string(replyMsg.Data))

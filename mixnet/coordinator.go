@@ -2,7 +2,6 @@ package mixnet
 
 import (
 	"fmt"
-	"github.com/EladCoding/HideMetaData/scripts"
 	"net"
 	"net/rpc"
 	"sync"
@@ -15,7 +14,7 @@ type CoordinatorListener struct {
 }
 
 
-func (l *CoordinatorListener) GetMessageFromClient(msg OnionMessage, reply *scripts.EncryptedMsg) error {
+func (l *CoordinatorListener) GetMessageFromClient(msg OnionMessage, reply *EncryptedMsg) error {
 	_, msgIndex := l.GeneralListener.readMessage(msg)
 	l.GeneralListener.roundFinished.Wait()
 	*reply = l.GeneralListener.roundRepliedMsgs[msgIndex]
@@ -28,9 +27,9 @@ func (l *CoordinatorListener) listenToMyAddress() {
 	address := userAddressesMap[l.GeneralListener.name]
 	fmt.Printf("name: %v. listen to address: %v\n", l.GeneralListener.name, address)
 	addy, err := net.ResolveTCPAddr("tcp", address)
-	scripts.CheckErrToLog(err)
+	CheckErrToLog(err)
 	inbound, err := net.ListenTCP("tcp", addy)
-	scripts.CheckErrToLog(err)
+	CheckErrToLog(err)
 	rpc.Register(l)
 	go rpc.Accept(inbound)
 }
@@ -63,7 +62,7 @@ func StartCoordinator(name string, num int, nextHopName string) {
 	mycond.L.Lock()
 	nextHopAddress := userAddressesMap[nextHopName]
 	nextHop, err = rpc.Dial("tcp", nextHopAddress)
-	scripts.CheckErrToLog(err)
+	CheckErrToLog(err)
 
 	// listen to address
 	listener := CoordinatorListener{GeneralListener{
@@ -71,9 +70,9 @@ func StartCoordinator(name string, num int, nextHopName string) {
 		num,
 		&sync.Mutex{},
 		make([]OnionMessage, 0),
-		make([]scripts.SecretKey, 0),
+		make([]SecretKey, 0),
 		mycond,
-		make([]scripts.EncryptedMsg, 0),
+		make([]EncryptedMsg, 0),
 		nextHop,
 		true,
 		false,

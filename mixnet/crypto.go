@@ -9,14 +9,13 @@ import (
 	"crypto/rand"
 	"errors"
 	"fmt"
-	"github.com/EladCoding/HideMetaData/scripts"
 	"io"
 )
 
 
 func GenerateAsymmetricKeyPair() (*ecdsa.PrivateKey, ecdsa.PublicKey) {
 	privKey, err := ecdsa.GenerateKey(elliptic.P256(), rand.Reader)
-	scripts.CheckErrToLog(err)
+	CheckErrToLog(err)
 	pubKey := privKey.PublicKey
 	return privKey, pubKey
 }
@@ -35,11 +34,11 @@ func DecryptKeyForKeyExchange(sourcePubKey ecdsa.PublicKey, privKey *ecdsa.Priva
 }
 
 
-func hybridEncription(plaintext []byte, destName string) ([]byte, ecdsa.PublicKey, scripts.SecretKey) {
-	destPubKey := scripts.DecodePublicKey(userPubKeyMap[destName])
+func hybridEncription(plaintext []byte, destName string) ([]byte, ecdsa.PublicKey, SecretKey) {
+	destPubKey := DecodePublicKey(userPubKeyMap[destName])
 	sharedSecret, pubKey := EncryptKeyForKeyExchange(*destPubKey)
 	cipherMsgData, err := symmetricEncryption(plaintext, sharedSecret)
-	scripts.CheckErrToLog(err)
+	CheckErrToLog(err)
 	return cipherMsgData, pubKey, sharedSecret
 }
 
@@ -47,13 +46,13 @@ func hybridEncription(plaintext []byte, destName string) ([]byte, ecdsa.PublicKe
 func symmetricEncryption(plaintext []byte, key []byte) ([]byte, error) {
 	// use the key to create AES cipher
 	c, err := aes.NewCipher(key)
-	scripts.CheckErrToLog(err)
+	CheckErrToLog(err)
 	gcm, err := cipher.NewGCM(c)
-	scripts.CheckErrToLog(err)
+	CheckErrToLog(err)
 	// create nonce
 	nonce := make([]byte, gcm.NonceSize())
 	_, err = io.ReadFull(rand.Reader, nonce)
-	scripts.CheckErrToLog(err)
+	CheckErrToLog(err)
 	return gcm.Seal(nonce, nonce, plaintext, nil), nil
 }
 
@@ -61,9 +60,9 @@ func symmetricEncryption(plaintext []byte, key []byte) ([]byte, error) {
 func symmetricDecryption(ciphertext []byte, key []byte) ([]byte, error) {
 	// use the key to create AES cipher
 	c, err := aes.NewCipher(key)
-	scripts.CheckErrToLog(err)
+	CheckErrToLog(err)
 	gcm, err := cipher.NewGCM(c)
-	scripts.CheckErrToLog(err)
+	CheckErrToLog(err)
 	// find nonce
 	nonceSize := gcm.NonceSize()
 	if len(ciphertext) < nonceSize {

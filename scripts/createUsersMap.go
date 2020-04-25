@@ -6,34 +6,35 @@ import (
 	"crypto/rand"
 	"encoding/json"
 	"fmt"
+	"github.com/EladCoding/HideMetaData/mixnet"
 )
 
 
 func GenerateAsymmetricKeyPair() (*ecdsa.PrivateKey, ecdsa.PublicKey) {
 	privKey, err := ecdsa.GenerateKey(elliptic.P256(), rand.Reader)
-	CheckErrToLog(err)
+	mixnet.CheckErrToLog(err)
 	pubKey := privKey.PublicKey
 	return privKey, pubKey
 }
 
 
 func CreateUsersMap() {
-	userAddresses := make(UserAddressMap, 0)
-	userPublicKeys := make(UserPublicKeyMap, 0)
-	userPrivateKeys := make(UserPrivateKeyMap, 0)
-	for _, userName := range UserNames {
-		userAddresses[userName] = fmt.Sprintf(AddressFormat, userName)
+	userAddresses := make(mixnet.UserAddressMap, 0)
+	userPublicKeys := make(mixnet.UserPublicKeyMap, 0)
+	userPrivateKeys := make(mixnet.UserPrivateKeyMap, 0)
+	for _, userName := range mixnet.UserNames {
+		userAddresses[userName] = fmt.Sprintf(mixnet.AddressFormat, userName)
 		privateKey, publicKey := GenerateAsymmetricKeyPair()
-		userPublicKeys[userName] = EncodePublicKey(&publicKey)
-		userPrivateKeys[userName] = EncodePrivateKey(privateKey)
+		userPublicKeys[userName] = mixnet.EncodePublicKey(&publicKey)
+		userPrivateKeys[userName] = mixnet.EncodePrivateKey(privateKey)
 	}
 	userAddressesjsonData, err := json.MarshalIndent(userAddresses, "", "\t")
-	CheckErrAndPanic(err)
-	WriteToFile(UserAddressesMapPath, userAddressesjsonData)
+	mixnet.CheckErrAndPanic(err)
+	mixnet.WriteToFile(mixnet.UserAddressesMapPath, userAddressesjsonData)
 	userPublicKeysjsonData, err := json.MarshalIndent(userPublicKeys, "", "\t")
-	CheckErrAndPanic(err)
-	WriteToFile(UserPublicKeysMapPath, userPublicKeysjsonData)
+	mixnet.CheckErrAndPanic(err)
+	mixnet.WriteToFile(mixnet.UserPublicKeysMapPath, userPublicKeysjsonData)
 	userPrivateKeysjsonData, err := json.MarshalIndent(userPrivateKeys, "", "\t")
-	CheckErrAndPanic(err)
-	WriteToFile(UserPrivateKeysMapPath, userPrivateKeysjsonData)
+	mixnet.CheckErrAndPanic(err)
+	mixnet.WriteToFile(mixnet.UserPrivateKeysMapPath, userPrivateKeysjsonData)
 }

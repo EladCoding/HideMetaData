@@ -2,7 +2,6 @@ package mixnet
 
 import (
 	"fmt"
-	"github.com/EladCoding/HideMetaData/scripts"
 	"net"
 	"net/rpc"
 	"sync"
@@ -15,7 +14,7 @@ type DistributorListener struct {
 }
 
 
-func (l *DistributorListener) GetRoundMsgs(msgs []OnionMessage, replies *[]scripts.EncryptedMsg) error {
+func (l *DistributorListener) GetRoundMsgs(msgs []OnionMessage, replies *[]EncryptedMsg) error {
 	for _, msg := range msgs {
 		l.GeneralListener.readMessage(msg)
 	}
@@ -31,9 +30,9 @@ func (l *DistributorListener) listenToMyAddress() {
 	address := userAddressesMap[l.GeneralListener.name]
 	fmt.Printf("name: %v. listen to address: %v\n", l.GeneralListener.name, address)
 	addy, err := net.ResolveTCPAddr("tcp", address)
-	scripts.CheckErrToLog(err)
+	CheckErrToLog(err)
 	inbound, err := net.ListenTCP("tcp", addy)
-	scripts.CheckErrToLog(err)
+	CheckErrToLog(err)
 	rpc.Register(l)
 	go rpc.Accept(inbound)
 }
@@ -46,10 +45,10 @@ func StartDistributor(name string, num int) {
 	var err error
 	// dial to all servers
 	clients = make(map[string]*rpc.Client, 0)
-	for _, serverName := range scripts.ServerNames {
+	for _, serverName := range ServerNames {
 		serverAddress := userAddressesMap[serverName]
 		client, err = rpc.Dial("tcp", serverAddress)
-		scripts.CheckErrToLog(err)
+		CheckErrToLog(err)
 		clients[serverName] = client
 	}
 
@@ -59,9 +58,9 @@ func StartDistributor(name string, num int) {
 		num,
 		&sync.Mutex{},
 		make([]OnionMessage, 0),
-		make([]scripts.SecretKey, 0),
+		make([]SecretKey, 0),
 		&sync.Cond{},
-		make([]scripts.EncryptedMsg, 0),
+		make([]EncryptedMsg, 0),
 		nil,
 		false,
 		true,

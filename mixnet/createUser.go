@@ -2,14 +2,13 @@ package mixnet
 
 import (
 	"fmt"
-	"github.com/EladCoding/HideMetaData/scripts"
 	"strings"
 )
 
 func StartUser(mode string, name string) {
 	switch strings.ToLower(mode) {
 	case "server":
-		for _, serverName := range scripts.ServerNames {
+		for _, serverName := range ServerNames {
 			if name == serverName {
 				StartServer(name)
 				return
@@ -29,7 +28,7 @@ func StartUser(mode string, name string) {
 		}
 		return
 	case "client":
-		for _, clientName := range scripts.ClientNames {
+		for _, clientName := range ClientNames {
 			if name == clientName {
 				StartClient(name)
 				return
