@@ -13,11 +13,6 @@ import (
 type ServerListener struct {
 	name string
 }
-type ReplyMessage struct {
-	From string
-	To string
-	Data []byte
-}
 
 
 func (l *ServerListener) GetMessage(msg OnionMessage, reply *scripts.EncryptedMsg) error {

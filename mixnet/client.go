@@ -79,7 +79,7 @@ func StartClient(name string) {
 		for _, msg := range userSplittedMsg {
 			cipherMsg, symKeys := createOnionMessage(name, serverName, msg, scripts.MediatorNames)
 			var reply scripts.EncryptedMsg
-			err = client.Call("CoordinatorListener.GetMessage", cipherMsg, &reply)
+			err = client.Call("CoordinatorListener.GetMessageFromClient", cipherMsg, &reply)
 			scripts.CheckErrToLog(err)
 			for index, _ := range symKeys {
 				symKey := symKeys[len(symKeys)-index-1]

@@ -21,7 +21,7 @@ package mixnet
 //}
 //
 //
-//func (l *MediatorListener) GetMessage(msg OnionMessage, reply *Reply) error {
+//func (l *MediatorListener) GetMessageFromClient(msg OnionMessage, reply *Reply) error {
 //	encData := msg.Data
 //	from := msg.From
 //	msg, symKey := DecryptOnionLayer(msg, scripts.DecodePrivateKey(userPrivKeyMap[l.name]))
@@ -88,10 +88,10 @@ package mixnet
 //			if l.lastMediator {
 //				destinitionServer := msg.To
 //				client = clients[destinitionServer]
-//				err := client.Call("ServerListener.GetMessage", msg, &reply)
+//				err := client.Call("ServerListener.GetMessageFromClient", msg, &reply)
 //				scripts.CheckErrToLog(err)
 //			} else {
-//				err := client.Call("DistributorListener.GetMessage", msg, &reply)
+//				err := client.Call("DistributorListener.GetMessageFromClient", msg, &reply)
 //				scripts.CheckErrToLog(err)
 //			}
 //			log.Printf("Reply: %v, From: %v, Data: %v", reply, reply.From, reply.Data)

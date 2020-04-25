@@ -3,7 +3,6 @@ package mixnet
 import (
 	"fmt"
 	"github.com/EladCoding/HideMetaData/scripts"
-	"log"
 	"net"
 	"net/rpc"
 	"sync"
@@ -12,90 +11,28 @@ import (
 
 
 type CoordinatorListener struct {
-	name      string
-	num int
-	msgMutex  *sync.Mutex
-	roundMsgs []OnionMessage
-	roundSymKeys []scripts.SecretKey
-	roundFinished *sync.Cond
-	roundRepliedMsgs []scripts.EncryptedMsg
-	nextHop *rpc.Client
+	GeneralListener GeneralListener
 }
 
 
-func (l *CoordinatorListener) GetMessage(msg OnionMessage, reply *scripts.EncryptedMsg) error {
-	_, msgIndex := l.readMessage(msg)
-	l.roundFinished.Wait()
-	*reply = l.roundRepliedMsgs[msgIndex]
+func (l *CoordinatorListener) GetMessageFromClient(msg OnionMessage, reply *scripts.EncryptedMsg) error {
+	_, msgIndex := l.GeneralListener.readMessage(msg)
+	l.GeneralListener.roundFinished.Wait()
+	*reply = l.GeneralListener.roundRepliedMsgs[msgIndex]
 	time.Sleep(100*time.Millisecond)
 	return nil
 }
 
 
-func (l *CoordinatorListener) readMessage(msg OnionMessage) (OnionMessage, int) {
-	from := msg.From
-	encMsg := msg
-	msg, symKey := DecryptOnionLayer(msg, scripts.DecodePrivateKey(userPrivKeyMap[l.name]))
-	to := msg.To
-	log.Printf("Coordinator %v Received OnionMessage:\nFrom: %v, To: %v, len: %v\n", l.name, from, to, len(encMsg.Data))
-	msgIndex := l.appendMsgToRound(msg, symKey)
-	return msg, msgIndex
-}
-
-
-func (l *CoordinatorListener) appendMsgToRound(msg OnionMessage, msgSymKey []byte) int {
-	l.msgMutex.Lock()
-	msgIndex := len(l.roundMsgs)
-	l.roundMsgs = append(l.roundMsgs, msg)
-	l.roundSymKeys = append(l.roundSymKeys, msgSymKey)
-	l.msgMutex.Unlock()
-	return msgIndex
-}
-
-
-func (l *CoordinatorListener) readRoundMsgs() ([]OnionMessage, []scripts.SecretKey) {
-	curRoundMsgs := l.roundMsgs
-	l.roundMsgs = make([]OnionMessage, 0)
-	curRoundSymKeys := l.roundSymKeys
-	l.roundSymKeys = make([]scripts.SecretKey, 0)
-	return curRoundMsgs, curRoundSymKeys
-}
-
-
 func (l *CoordinatorListener) listenToMyAddress() {
-	address := userAddressesMap[l.name]
-	fmt.Printf("name: %v. listen to address: %v\n", l.name, address)
+	address := userAddressesMap[l.GeneralListener.name]
+	fmt.Printf("name: %v. listen to address: %v\n", l.GeneralListener.name, address)
 	addy, err := net.ResolveTCPAddr("tcp", address)
 	scripts.CheckErrToLog(err)
 	inbound, err := net.ListenTCP("tcp", addy)
 	scripts.CheckErrToLog(err)
 	rpc.Register(l)
 	go rpc.Accept(inbound)
-}
-
-
-func (l *CoordinatorListener) sendRoundMessagesToNextHop(nextHop *rpc.Client, curRoundMsgs []OnionMessage, curRoundSymKeys []scripts.SecretKey) []scripts.EncryptedMsg {
-	var curRoundRepliedMsgs []scripts.EncryptedMsg
-	roundMsgsLen := len(curRoundMsgs)
-	if len(curRoundMsgs) == 0 { // TODO remove from here
-		return nil
-	}
-
-	// TODO random number of fakes
-	curRoundMsgs = appendFakeMsgs(curRoundMsgs, fakeMsgsToAppend, l.name, scripts.MediatorNames[l.num:])
-
-	curRoundShuffledMsgs, curRoundPerm := shuffleMsgs(curRoundMsgs)
-
-	err := nextHop.Call("MediatorListener.GetBunchOfMessages", curRoundShuffledMsgs, &curRoundRepliedMsgs)
-	scripts.CheckErrToLog(err)
-
-	unShuffledCurRoundRepliedMsgs := reverseShufflingReplyMsgs(curRoundRepliedMsgs, curRoundPerm)[:roundMsgsLen]
-
-	for index, msg := range unShuffledCurRoundRepliedMsgs {
-		unShuffledCurRoundRepliedMsgs[index], err = symmetricEncryption(msg, curRoundSymKeys[index])
-		scripts.CheckErrAndPanic(err)
-	}
-	return unShuffledCurRoundRepliedMsgs
 }
 
 
@@ -109,11 +46,11 @@ func (l *CoordinatorListener) coordinateRounds() {
 			//continue // TODO check if needed
 		}
 		nextRound = time.Now().Add(roundSlotTime)
-		l.msgMutex.Lock()
-		curRoundMsgs, curRoundSymKeys := l.readRoundMsgs()
-		l.roundRepliedMsgs = l.sendRoundMessagesToNextHop(l.nextHop, curRoundMsgs, curRoundSymKeys)
-		l.roundFinished.Broadcast()
-		l.msgMutex.Unlock()
+		l.GeneralListener.msgMutex.Lock()
+		curRoundMsgs, curRoundSymKeys := l.GeneralListener.readRoundMsgs()
+		l.GeneralListener.roundRepliedMsgs = l.GeneralListener.sendRoundMessagesToNextHop(l.GeneralListener.nextHop, curRoundMsgs, curRoundSymKeys)
+		l.GeneralListener.roundFinished.Broadcast()
+		l.GeneralListener.msgMutex.Unlock()
 	}
 }
 
@@ -129,7 +66,7 @@ func StartCoordinator(name string, num int, nextHopName string) {
 	scripts.CheckErrToLog(err)
 
 	// listen to address
-	listener := CoordinatorListener{
+	listener := CoordinatorListener{GeneralListener{
 		name,
 		num,
 		&sync.Mutex{},
@@ -138,6 +75,10 @@ func StartCoordinator(name string, num int, nextHopName string) {
 		mycond,
 		make([]scripts.EncryptedMsg, 0),
 		nextHop,
+		true,
+		false,
+		nil,
+	},
 	}
 	listener.listenToMyAddress()
 	listener.coordinateRounds()

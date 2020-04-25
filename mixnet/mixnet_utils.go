@@ -13,6 +13,13 @@ import (
 )
 
 
+type ReplyMessage struct {
+	From string
+	To string
+	Data []byte
+}
+
+
 // cipher vars
 var RsaKeyBits = 2048
 var CipherRsaLen = RsaKeyBits / 8
