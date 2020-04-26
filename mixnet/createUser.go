@@ -30,7 +30,7 @@ func StartUser(mode string, name string) {
 	case "client":
 		for _, clientName := range ClientNames {
 			if name == clientName {
-				StartClient(name)
+				StartClient(name, false, nil, nil)
 				return
 			}
 		}

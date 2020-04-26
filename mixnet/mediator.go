@@ -78,6 +78,7 @@ func (l *GeneralListener) sendRoundMessagesToNextHop(nextHop *rpc.Client, curRou
 		unShuffledCurRoundRepliedMsgs[index], err = symmetricEncryption(msg, curRoundSymKeys[index])
 		CheckErrAndPanic(err)
 	}
+	//fmt.Printf("unshuffle len: %v", len(unShuffledCurRoundRepliedMsgs))
 	return unShuffledCurRoundRepliedMsgs
 }
 
@@ -113,7 +114,7 @@ func (l *GeneralListener) readRoundMsgs() ([]OnionMessage, []SecretKey) {
 }
 
 
-func (l *MediatorListener) listenToMyAddress() {
+func (l *MediatorListener) listenToMediatorAddress() {
 	address := userAddressesMap[l.GeneralListener.name]
 	fmt.Printf("name: %v. listen to address: %v\n", l.GeneralListener.name, address)
 	addy, err := net.ResolveTCPAddr("tcp", address)
@@ -150,7 +151,7 @@ func StartMediator(name string, num int, nextHopName string) {
 	},
 	}
 
-	listener.listenToMyAddress()
+	listener.listenToMediatorAddress()
 	for {
 		continue
 	}

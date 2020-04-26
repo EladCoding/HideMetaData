@@ -26,7 +26,7 @@ func (l *DistributorListener) GetRoundMsgs(msgs []OnionMessage, replies *[]Encry
 }
 
 
-func (l *DistributorListener) listenToMyAddress() {
+func (l *DistributorListener) listenToDistributorAddress() {
 	address := userAddressesMap[l.GeneralListener.name]
 	fmt.Printf("name: %v. listen to address: %v\n", l.GeneralListener.name, address)
 	addy, err := net.ResolveTCPAddr("tcp", address)
@@ -67,7 +67,7 @@ func StartDistributor(name string, num int) {
 		clients,
 	},
 	}
-	listener.listenToMyAddress()
+	listener.listenToDistributorAddress()
 	for {
 		continue
 	}

@@ -25,7 +25,7 @@ var CipherRsaLen = RsaKeyBits / 8
 var AesKeyBytes = 32
 var MsgBytes = 256  // TODO check size
 var maxUserMsgSize = MsgBytes - 1
-var fakeMsgsToAppend = 1
+var fakeMsgsToAppend = 0
 
 // general vars
 const PathLen = 3
@@ -33,7 +33,7 @@ const UserNameLen = 3
 const AddressSpot = 0
 const PublicKeyPathSpot = 1
 const PrivateKeyPathSpot = 2
-const roundSlotTime = 5*time.Second
+const roundSlotTime = 3*time.Second
 const minRoundSlotTime = roundSlotTime / 2
 
 

@@ -15,15 +15,17 @@ type CoordinatorListener struct {
 
 
 func (l *CoordinatorListener) GetMessageFromClient(msg OnionMessage, reply *EncryptedMsg) error {
+	l.GeneralListener.roundFinished.L.Lock()
 	_, msgIndex := l.GeneralListener.readMessage(msg)
 	l.GeneralListener.roundFinished.Wait()
 	*reply = l.GeneralListener.roundRepliedMsgs[msgIndex]
+	l.GeneralListener.roundFinished.L.Unlock()
 	time.Sleep(100*time.Millisecond)
 	return nil
 }
 
 
-func (l *CoordinatorListener) listenToMyAddress() {
+func (l *CoordinatorListener) listenToCoordinatorAddress() {
 	address := userAddressesMap[l.GeneralListener.name]
 	fmt.Printf("name: %v. listen to address: %v\n", l.GeneralListener.name, address)
 	addy, err := net.ResolveTCPAddr("tcp", address)
@@ -37,19 +39,19 @@ func (l *CoordinatorListener) listenToMyAddress() {
 
 func (l *CoordinatorListener) coordinateRounds() {
 	nextRound := time.Now().Add(roundSlotTime) // TODO check what define round
-	roundNumber := 1
 	for { // for each round
-		roundNumber += 1
 		if timeUntilNextRound := time.Until(nextRound); timeUntilNextRound > 0 {
 			time.Sleep(timeUntilNextRound)
 			//continue // TODO check if needed
 		}
+		l.GeneralListener.roundFinished.L.Lock()
 		nextRound = time.Now().Add(roundSlotTime)
 		l.GeneralListener.msgMutex.Lock()
 		curRoundMsgs, curRoundSymKeys := l.GeneralListener.readRoundMsgs()
 		l.GeneralListener.roundRepliedMsgs = l.GeneralListener.sendRoundMessagesToNextHop(l.GeneralListener.nextHop, curRoundMsgs, curRoundSymKeys)
-		l.GeneralListener.roundFinished.Broadcast()
 		l.GeneralListener.msgMutex.Unlock()
+		l.GeneralListener.roundFinished.Broadcast()
+		l.GeneralListener.roundFinished.L.Unlock()
 	}
 }
 
@@ -58,8 +60,7 @@ func StartCoordinator(name string, num int, nextHopName string) {
 	fmt.Printf("Starting Coordinator %v...\n", name)
 	var nextHop *rpc.Client
 	var err error
-	mycond := sync.NewCond(&sync.Mutex{})
-	mycond.L.Lock()
+	roundCond := sync.NewCond(&sync.Mutex{})
 	nextHopAddress := userAddressesMap[nextHopName]
 	nextHop, err = rpc.Dial("tcp", nextHopAddress)
 	CheckErrToLog(err)
@@ -71,7 +72,7 @@ func StartCoordinator(name string, num int, nextHopName string) {
 		&sync.Mutex{},
 		make([]OnionMessage, 0),
 		make([]SecretKey, 0),
-		mycond,
+		roundCond,
 		make([]EncryptedMsg, 0),
 		nextHop,
 		true,
@@ -79,6 +80,6 @@ func StartCoordinator(name string, num int, nextHopName string) {
 		nil,
 	},
 	}
-	listener.listenToMyAddress()
+	listener.listenToCoordinatorAddress()
 	listener.coordinateRounds()
 }

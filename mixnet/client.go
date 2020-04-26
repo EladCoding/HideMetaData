@@ -56,13 +56,37 @@ func convertStringToMessages(message string) [][]byte {
 }
 
 
-func StartClient(name string) {
+func sendSpecificMessage(name string, serverName string, msg []byte, client *rpc.Client) {
+	cipherMsg, symKeys := createOnionMessage(name, serverName, msg, MediatorNames)
+	var reply EncryptedMsg
+	err := client.Call("CoordinatorListener.GetMessageFromClient", cipherMsg, &reply)
+	if len(reply) == 0 {
+		return
+	}
+	CheckErrToLog(err)
+	for index, _ := range symKeys {
+		symKey := symKeys[len(symKeys)-index-1]
+		reply, err = symmetricDecryption(reply, symKey)
+		CheckErrAndPanic(err)
+	}
+	replyMsg := ConvertBytesToReplyMsg(reply)
+	log.Printf("Client %v got reply message:\nFrom: %v, Data: %v\n", name, replyMsg.From, string(replyMsg.Data))
+}
+
+
+func StartClient(name string, statistics bool, serverNamePipe chan string, massagePipe chan string) {
+	var serverName string
+	var userSplittedMsg [][]byte
 	fmt.Printf("Starting Client %v...\n", name)
 	mediatorAddress := userAddressesMap["101"]
 	client, err := rpc.Dial("tcp", mediatorAddress)
 	CheckErrToLog(err)
 	for {
-		serverName := getServerNameFromUser()
+		if statistics {
+			serverName = <- serverNamePipe
+		} else {
+			serverName = getServerNameFromUser()
+		}
 		if serverName == "exit" {
 			fmt.Printf("Exiting!\n")
 			return
@@ -74,19 +98,17 @@ func StartClient(name string) {
 			fmt.Printf("Server %s size is weird!\n", serverName)
 			continue
 		}
-		userSplittedMsg := getMessageFromUser(serverName)
+		if statistics {
+			userSplittedMsg = convertStringToMessages(<- massagePipe)
+		} else {
+			userSplittedMsg = getMessageFromUser(serverName)
+		}
 		for _, msg := range userSplittedMsg {
-			cipherMsg, symKeys := createOnionMessage(name, serverName, msg, MediatorNames)
-			var reply EncryptedMsg
-			err = client.Call("CoordinatorListener.GetMessageFromClient", cipherMsg, &reply)
-			CheckErrToLog(err)
-			for index, _ := range symKeys {
-				symKey := symKeys[len(symKeys)-index-1]
-				reply, err = symmetricDecryption(reply, symKey)
-				CheckErrAndPanic(err)
+			if statistics {
+				go sendSpecificMessage(name, serverName, msg, client)
+			} else {
+				sendSpecificMessage(name, serverName, msg, client)
 			}
-			replyMsg := ConvertBytesToReplyMsg(reply)
-			log.Printf("Client %v got reply message:\nFrom: %v, Data: %v\n", name, replyMsg.From, string(replyMsg.Data))
 		}
 		time.Sleep(100 * time.Millisecond)
 	}

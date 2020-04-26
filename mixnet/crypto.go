@@ -37,6 +37,9 @@ func DecryptKeyForKeyExchange(sourcePubKey ecdsa.PublicKey, privKey *ecdsa.Priva
 func hybridEncription(plaintext []byte, destName string) ([]byte, ecdsa.PublicKey, SecretKey) {
 	destPubKey := DecodePublicKey(userPubKeyMap[destName])
 	sharedSecret, pubKey := EncryptKeyForKeyExchange(*destPubKey)
+	if len(sharedSecret) != 32 {
+		panic("------------------------------------------------------------------------ what the len!!!!!!!!!!!!!!!! ------------------------------------------------------------------------")
+	}
 	cipherMsgData, err := symmetricEncryption(plaintext, sharedSecret)
 	CheckErrToLog(err)
 	return cipherMsgData, pubKey, sharedSecret
