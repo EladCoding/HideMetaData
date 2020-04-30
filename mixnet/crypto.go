@@ -7,6 +7,7 @@ import (
 	"crypto/ecdsa"
 	"crypto/elliptic"
 	"crypto/rand"
+	"crypto/sha256"
 	"errors"
 	"fmt"
 	"io"
@@ -23,27 +24,57 @@ func GenerateAsymmetricKeyPair() (*ecdsa.PrivateKey, ecdsa.PublicKey) {
 
 func EncryptKeyForKeyExchange(destPubKey ecdsa.PublicKey) ([]byte, ecdsa.PublicKey) {
 	privKey, pubKey := GenerateAsymmetricKeyPair()
-	sharedSecret, _ := destPubKey.Curve.ScalarMult(destPubKey.X, destPubKey.Y, privKey.D.Bytes())
-	return sharedSecret.Bytes(), pubKey
+	a, _ := destPubKey.Curve.ScalarMult(destPubKey.X, destPubKey.Y, privKey.D.Bytes())
+	sharedSecret := sha256.Sum256(a.Bytes())
+	return sharedSecret[:], pubKey
 }
 
 
 func DecryptKeyForKeyExchange(sourcePubKey ecdsa.PublicKey, privKey *ecdsa.PrivateKey) []byte {
-	sharedSecret, _ := sourcePubKey.Curve.ScalarMult(sourcePubKey.X, sourcePubKey.Y, privKey.D.Bytes())
-	return sharedSecret.Bytes()
+	b, _ := sourcePubKey.Curve.ScalarMult(sourcePubKey.X, sourcePubKey.Y, privKey.D.Bytes())
+	sharedSecret := sha256.Sum256(b.Bytes())
+	return sharedSecret[:]
 }
 
 
 func hybridEncription(plaintext []byte, destName string) ([]byte, ecdsa.PublicKey, SecretKey) {
-	destPubKey := DecodePublicKey(userPubKeyMap[destName])
+	destPubKey := DecodePublicKey(UserPubKeyMap[destName])
 	sharedSecret, pubKey := EncryptKeyForKeyExchange(*destPubKey)
 	if len(sharedSecret) != 32 {
+		print(len(sharedSecret))
 		panic("------------------------------------------------------------------------ what the len!!!!!!!!!!!!!!!! ------------------------------------------------------------------------")
 	}
 	cipherMsgData, err := symmetricEncryption(plaintext, sharedSecret)
 	CheckErrToLog(err)
 	return cipherMsgData, pubKey, sharedSecret
 }
+
+
+const NONCE_LEN int = 24
+func randomNonce() ([]byte, error) {
+	b := make([]byte, NONCE_LEN)
+	_, err := rand.Read(b)
+	return b, err
+}
+
+
+//func symmetricEncryption(plaintext, k []byte) ([]byte, error) {
+//	nonce, err := randomNonce()
+//	if err != nil {
+//		return nil, err
+//	}
+//	cyphertext := sodium.Bytes(plaintext).SecretBox(
+//		sodium.SecretBoxNonce{nonce},
+//		sodium.SecretBoxKey{k})
+//	return append(nonce, cyphertext...), nil
+//}
+
+
+//func symmetricDecryption(cyphertext, k []byte) ([]byte, error) {
+//	nonce := sodium.SecretBoxNonce{cyphertext[:NONCE_LEN]}
+//	enc := sodium.Bytes(cyphertext[NONCE_LEN:])
+//	return enc.SecretBoxOpen(nonce, sodium.SecretBoxKey{k})
+//}
 
 
 func symmetricEncryption(plaintext []byte, key []byte) ([]byte, error) {
@@ -84,7 +115,7 @@ func pkcs7strip(msg []byte, blockSize int) ([]byte, error) {
 	} else if msgLen%blockSize != 0 {
 		return nil, errors.New("pkcs7: Data is not block-aligned")
 	} else if msgLen > blockSize {
-		return nil, fmt.Errorf("pkcs7: Invalid message size %d", msgLen) // TODO maybe remove this part (if I want to split msg)
+		return nil, fmt.Errorf("pkcs7: Invalid message size %d", msgLen)
 	}
 	padLen := int(msg[msgLen-1])
 	ref := bytes.Repeat([]byte{byte(padLen)}, padLen)
@@ -98,7 +129,7 @@ func pkcs7strip(msg []byte, blockSize int) ([]byte, error) {
 func pkcs7padding(msg []byte, blockSize int) ([]byte, error) {
 	if blockSize < 0 || blockSize > 256 {
 		return nil, fmt.Errorf("pkcs7: Invalid block size %d", blockSize)
-	} else if msgLen:= len(msg); msgLen >= blockSize { // TODO maybe remove this part (if I want to split msg)
+	} else if msgLen:= len(msg); msgLen >= blockSize {
 		return nil, fmt.Errorf("pkcs7: Invalid message size %d", msgLen)
 	} else {
 		padLen := blockSize - (msgLen % blockSize)

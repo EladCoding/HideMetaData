@@ -13,16 +13,16 @@ import (
 	"path/filepath"
 )
 
-type UserAddressMap map[string]string
-type UserPublicKeyMap map[string]string
-type UserPrivateKeyMap map[string]string
+type UserAddressMapType map[string]string
+type UserPublicKeyMapType map[string]string
+type UserPrivateKeyMapType map[string]string
 type ClientsMap map[string]*rpc.Client
 type SecretKey []byte
 type EncryptedMsg []byte
 
 var WorkingDir, _ = os.Getwd()
 var ExternalsPath = path.Join(WorkingDir, "externals")
-var UserAddressesMapPath = path.Join(ExternalsPath, "userAddressesMap.json")
+var UserAddressesMapPath = path.Join(ExternalsPath, "UserAddressesMap.json")
 var UserPublicKeysMapPath = path.Join(ExternalsPath, "userPublicKeysMap.json")
 var UserPrivateKeysMapPath = path.Join(ExternalsPath, "userPrivateKeysMap.json")
 var PortFormat = "8%s"
@@ -114,4 +114,13 @@ func DecodePublicKey(pemEncodedPub string) *ecdsa.PublicKey {
 	genericPublicKey, _ := x509.ParsePKIXPublicKey(x509EncodedPub)
 	publicKey := genericPublicKey.(*ecdsa.PublicKey)
 	return publicKey
+}
+
+
+func intMax(a int, b int) int {
+	if a > b {
+		return a
+	} else {
+		return b
+	}
 }

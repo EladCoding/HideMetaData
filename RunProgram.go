@@ -4,11 +4,17 @@ import (
 	"crypto/elliptic"
 	"encoding/gob"
 	"fmt"
+	"github.com/EladCoding/HideMetaData/mixnet"
 	"github.com/EladCoding/HideMetaData/scripts"
 	"os"
 )
 
 func main() {
+	scripts.CreateUsersMap()
+	mixnet.UserAddressesMap = mixnet.ReadUserAddressMap()
+	mixnet.UserPubKeyMap = mixnet.ReadUserPubKeyMap()
+	mixnet.UserPrivKeyMap = mixnet.ReadUserPrivKeyMap()
+
 	args := os.Args
 	var runningChoice string
 	if len(args) > 1 {

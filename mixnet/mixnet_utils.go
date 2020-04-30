@@ -5,6 +5,8 @@ import (
 	"crypto/ecdsa"
 	"encoding/gob"
 	"encoding/json"
+	laplaceRand "golang.org/x/exp/rand"
+	"gonum.org/v1/gonum/stat/distuv"
 	"io/ioutil"
 	"math/rand"
 	"os"
@@ -25,7 +27,6 @@ var CipherRsaLen = RsaKeyBits / 8
 var AesKeyBytes = 32
 var MsgBytes = 256  // TODO check size
 var maxUserMsgSize = MsgBytes - 1
-var fakeMsgsToAppend = 0
 
 // general vars
 const PathLen = 3
@@ -34,11 +35,13 @@ const AddressSpot = 0
 const PublicKeyPathSpot = 1
 const PrivateKeyPathSpot = 2
 const roundSlotTime = 3*time.Second
-const minRoundSlotTime = roundSlotTime / 2
+const fakeMsgsLaplaceMean = 100.0 // TODO change and check
+const fakeMsgsLaplaceScale = (fakeMsgsLaplaceMean / 16) // TODO change and check
+const minRoundSlotTime = roundSlotTime / 10
 
 
-func readUserAddressMap() UserAddressMap { // TODO change
-	var usersMap UserAddressMap
+func ReadUserAddressMap() UserAddressMapType { // TODO change
+	var usersMap UserAddressMapType
 	jsonFile, err := os.Open(UserAddressesMapPath)
 	CheckErrAndPanic(err)
 	defer jsonFile.Close()
@@ -48,8 +51,8 @@ func readUserAddressMap() UserAddressMap { // TODO change
 }
 
 
-func readUserPubKeyMap() UserPublicKeyMap { // TODO change
-	var usersMap UserPublicKeyMap
+func ReadUserPubKeyMap() UserPublicKeyMapType { // TODO change
+	var usersMap UserPublicKeyMapType
 	jsonFile, err := os.Open(UserPublicKeysMapPath)
 	CheckErrAndPanic(err)
 	defer jsonFile.Close()
@@ -59,8 +62,8 @@ func readUserPubKeyMap() UserPublicKeyMap { // TODO change
 }
 
 
-func readUserPrivKeyMap() UserPrivateKeyMap { // TODO change
-	var usersMap UserPrivateKeyMap
+func ReadUserPrivKeyMap() UserPrivateKeyMapType { // TODO change
+	var usersMap UserPrivateKeyMapType
 	jsonFile, err := os.Open(UserPrivateKeysMapPath)
 	CheckErrAndPanic(err)
 	defer jsonFile.Close()
@@ -171,12 +174,17 @@ func DecryptOnionLayer(onionMsg OnionMessage, privKey *ecdsa.PrivateKey) (OnionM
 }
 
 
-var userAddressesMap = readUserAddressMap()
-var userPubKeyMap = readUserPubKeyMap()
-var userPrivKeyMap = readUserPrivKeyMap()
+func sampleFromLaplace() int {
+	numOfFakes := int(myLaplace.Rand())
+	return intMax(numOfFakes, 0)
+}
 
 
-//var userAddressesMap scripts.UserAddressMap
-//var userPubKeyMap scripts.UserPublicKeyMap
-//var userPrivKeyMap scripts.UserPrivateKeyMap
-
+var UserAddressesMap UserAddressMapType
+var UserPubKeyMap UserPublicKeyMapType
+var UserPrivKeyMap UserPrivateKeyMapType
+var	myLaplace = distuv.Laplace{
+	fakeMsgsLaplaceMean,
+	fakeMsgsLaplaceScale,
+	laplaceRand.NewSource(uint64(time.Now().UTC().UnixNano())),
+}

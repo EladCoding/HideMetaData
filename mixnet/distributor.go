@@ -15,6 +15,10 @@ type DistributorListener struct {
 
 
 func (l *DistributorListener) GetRoundMsgs(msgs []OnionMessage, replies *[]EncryptedMsg) error {
+	if time.Since(l.GeneralListener.lastRoundTime) < minRoundSlotTime {
+		panic("Round Time was too short.\n")
+	}
+	l.GeneralListener.lastRoundTime = time.Now()
 	for _, msg := range msgs {
 		l.GeneralListener.readMessage(msg)
 	}
@@ -27,7 +31,7 @@ func (l *DistributorListener) GetRoundMsgs(msgs []OnionMessage, replies *[]Encry
 
 
 func (l *DistributorListener) listenToDistributorAddress() {
-	address := userAddressesMap[l.GeneralListener.name]
+	address := UserAddressesMap[l.GeneralListener.name]
 	fmt.Printf("name: %v. listen to address: %v\n", l.GeneralListener.name, address)
 	addy, err := net.ResolveTCPAddr("tcp", address)
 	CheckErrToLog(err)
@@ -46,7 +50,7 @@ func StartDistributor(name string, num int) {
 	// dial to all servers
 	clients = make(map[string]*rpc.Client, 0)
 	for _, serverName := range ServerNames {
-		serverAddress := userAddressesMap[serverName]
+		serverAddress := UserAddressesMap[serverName]
 		client, err = rpc.Dial("tcp", serverAddress)
 		CheckErrToLog(err)
 		clients[serverName] = client
@@ -65,6 +69,7 @@ func StartDistributor(name string, num int) {
 		false,
 		true,
 		clients,
+		time.Now(),
 	},
 	}
 	listener.listenToDistributorAddress()

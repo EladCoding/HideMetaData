@@ -2,7 +2,6 @@ package mixnet
 
 import (
 	"fmt"
-	"log"
 	"net"
 	"net/rpc"
 	"sync"
@@ -22,6 +21,7 @@ type GeneralListener struct {
 	isCoordinator    bool
 	isDistributor    bool
 	clients          ClientsMap
+	lastRoundTime time.Time
 }
 
 
@@ -31,11 +31,11 @@ type MediatorListener struct {
 
 
 func (l *GeneralListener) readMessage(msg OnionMessage) (OnionMessage, int) {
-	from := msg.From
-	encMsg := msg
-	msg, symKey := DecryptOnionLayer(msg, DecodePrivateKey(userPrivKeyMap[l.name]))
-	to := msg.To
-	log.Printf("Mediator %v Received OnionMessage:\nFrom: %v, To: %v, len: %v\n", l.name, from, to, len(encMsg.Data))
+	//from := msg.From
+	//encMsg := msg
+	msg, symKey := DecryptOnionLayer(msg, DecodePrivateKey(UserPrivKeyMap[l.name]))
+	//to := msg.To
+	//log.Printf("Mediator %v Received OnionMessage:\nFrom: %v, To: %v, len: %v\n", l.name, from, to, len(encMsg.Data))
 	msgIndex := l.appendMsgToRound(msg, symKey)
 	return msg, msgIndex
 }
@@ -45,11 +45,8 @@ func (l *GeneralListener) sendRoundMessagesToNextHop(nextHop *rpc.Client, curRou
 	var curRoundRepliedMsgs []EncryptedMsg
 	var err error
 	roundMsgsLen := len(curRoundMsgs)
-	if len(curRoundMsgs) == 0 { // TODO remove from here
-		return nil
-	}
 
-	// TODO random number of fakes
+	fakeMsgsToAppend := sampleFromLaplace()
 	curRoundMsgs = appendFakeMsgs(curRoundMsgs, fakeMsgsToAppend, l.name, MediatorNames[l.num:])
 
 	curRoundShuffledMsgs, curRoundPerm := shuffleMsgs(curRoundMsgs)
@@ -84,13 +81,16 @@ func (l *GeneralListener) sendRoundMessagesToNextHop(nextHop *rpc.Client, curRou
 
 
 func (l *MediatorListener) GetRoundMsgs(msgs []OnionMessage, replies *[]EncryptedMsg) error {
+	if time.Since(l.GeneralListener.lastRoundTime) < minRoundSlotTime {
+		panic("Round Time was too short.\n")
+	}
+	l.GeneralListener.lastRoundTime = time.Now()
 	for _, msg := range msgs {
 		l.GeneralListener.readMessage(msg)
 	}
 	decMsgs, symKeys := l.GeneralListener.readRoundMsgs()
 	*replies = l.GeneralListener.sendRoundMessagesToNextHop(l.GeneralListener.nextHop, decMsgs, symKeys)
 
-	time.Sleep(100*time.Millisecond)
 	return nil
 }
 
@@ -115,7 +115,7 @@ func (l *GeneralListener) readRoundMsgs() ([]OnionMessage, []SecretKey) {
 
 
 func (l *MediatorListener) listenToMediatorAddress() {
-	address := userAddressesMap[l.GeneralListener.name]
+	address := UserAddressesMap[l.GeneralListener.name]
 	fmt.Printf("name: %v. listen to address: %v\n", l.GeneralListener.name, address)
 	addy, err := net.ResolveTCPAddr("tcp", address)
 	CheckErrToLog(err)
@@ -130,7 +130,7 @@ func StartMediator(name string, num int, nextHopName string) {
 	fmt.Printf("Starting Mediator %v...\n", name)
 	var nextHop *rpc.Client
 	var err error
-	nextHopAddress := userAddressesMap[nextHopName]
+	nextHopAddress := UserAddressesMap[nextHopName]
 	nextHop, err = rpc.Dial("tcp", nextHopAddress)
 	CheckErrToLog(err)
 
@@ -148,6 +148,7 @@ func StartMediator(name string, num int, nextHopName string) {
 		false,
 		false,
 		nil,
+		time.Now(),
 	},
 	}
 

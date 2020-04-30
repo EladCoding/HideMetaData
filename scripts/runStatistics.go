@@ -13,16 +13,24 @@ func RunStatistics() {
 
 	serverNamePipe := make(chan string)
 	messagesPipe := make(chan string)
+	donePipe := make(chan bool)
 
-	go mixnet.StartClient("201", true, serverNamePipe, messagesPipe)
-	for i := 0; i < 100; i += 1 {
+	go mixnet.StartClient("201", true, serverNamePipe, messagesPipe, donePipe)
+	time.Sleep(time.Second)
+	startTime := time.Now()
+	for i := 0; i < 1000; i += 1 {
+		donePipe <- false
 		serverNamePipe <- "001"
 		msg := fmt.Sprintf("%v", i)
 		messagesPipe <- msg
-		fmt.Printf(msg)
-		time.Sleep(time.Second / 10)
 	}
-	for {
-		continue
+	donePipe <- true
+	if <- donePipe {
+		fmt.Printf("Great.\n")
+	} else {
+		panic("What.\n")
 	}
+	duration := time.Since(startTime)
+	fmt.Printf("Finished after: %v\n", duration)
+
 }
