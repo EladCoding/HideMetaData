@@ -4,6 +4,7 @@ import (
 	"bufio"
 	"crypto/ecdsa"
 	"fmt"
+	"log"
 	"net/rpc"
 	"os"
 	"strings"
@@ -56,7 +57,7 @@ func convertStringToMessages(message string) [][]byte {
 }
 
 
-func sendSpecificMessage(name string, serverName string, msg []byte, client *rpc.Client, wg *sync.WaitGroup) {
+func sendSpecificMessage(name string, serverName string, msg []byte, client *rpc.Client, wg *sync.WaitGroup, statistics bool) {
 	cipherMsg, symKeys := createOnionMessage(name, serverName, msg, MediatorNames)
 	var reply EncryptedMsg
 	err := client.Call("CoordinatorListener.GetMessageFromClient", cipherMsg, &reply)
@@ -71,12 +72,16 @@ func sendSpecificMessage(name string, serverName string, msg []byte, client *rpc
 	}
 	replyMsg := ConvertBytesToReplyMsg(reply)
 	orgMsg, _ := pkcs7strip(msg, MsgBytes)
-	if string(replyMsg.Data) == string(orgMsg) {
-		wg.Done()
+
+	if statistics {
+		if string(replyMsg.Data) == string(orgMsg) {
+			wg.Done()
+		} else {
+			panic(fmt.Sprintf("Reply don't feet.\nmsg: %v\nreply: %v\n", string(orgMsg), string(replyMsg.Data)))
+		}
 	} else {
-		panic(fmt.Sprintf("Reply don't feet.\nmsg: %v\nreply: %v\n", string(orgMsg), string(replyMsg.Data)))
+		log.Printf("Client %v got reply message:\nFrom: %v, Data: %v\n", name, replyMsg.From, string(replyMsg.Data))
 	}
-	//log.Printf("Client %v got reply message:\nFrom: %v, Data: %v\n", name, replyMsg.From, string(replyMsg.Data))
 }
 
 
@@ -117,9 +122,9 @@ func StartClient(name string, statistics bool, serverNamePipe chan string, massa
 		for _, msg := range userSplittedMsg {
 			if statistics {
 				wg.Add(1)
-				go sendSpecificMessage(name, serverName, msg, client, wg)
+				go sendSpecificMessage(name, serverName, msg, client, wg, statistics)
 			} else {
-				sendSpecificMessage(name, serverName, msg, client, nil)
+				sendSpecificMessage(name, serverName, msg, client, nil, statistics)
 			}
 		}
 		if !statistics {
