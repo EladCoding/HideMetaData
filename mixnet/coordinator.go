@@ -44,15 +44,21 @@ func (l *CoordinatorListener) listenToCoordinatorAddress() {
 
 func (l *CoordinatorListener) coordinateRounds() {
 	nextRound := time.Now().Add(roundSlotTime)
+	round := 1
+	totalMsgs := 0
 	for { // for each round
 		if timeUntilNextRound := time.Until(nextRound); timeUntilNextRound > 0 {
 			time.Sleep(timeUntilNextRound)
 		}
+		fmt.Printf("Coordinator: round: %v\n", round)
+		round += 1
+		nextRound = time.Now().Add(roundSlotTime) // TODO maybe change to slots instead of +1 from now
 		l.startReading.Lock()
 		l.GeneralListener.roundFinished.L.Lock()
-		nextRound = time.Now().Add(roundSlotTime)
 		l.GeneralListener.msgMutex.Lock()
 		curRoundMsgs, curRoundSymKeys := l.GeneralListener.readRoundMsgs()
+		totalMsgs += len(curRoundMsgs)
+		fmt.Printf("Coordinator: Got: %v msgs\n", totalMsgs)
 		l.GeneralListener.msgMutex.Unlock()
 		l.GeneralListener.roundRepliedMsgs = l.GeneralListener.sendRoundMessagesToNextHop(l.GeneralListener.nextHop, curRoundMsgs, curRoundSymKeys)
 		l.GeneralListener.roundFinished.Broadcast()

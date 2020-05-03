@@ -34,9 +34,9 @@ const UserNameLen = 3
 const AddressSpot = 0
 const PublicKeyPathSpot = 1
 const PrivateKeyPathSpot = 2
-const roundSlotTime = 3*time.Second
-const fakeMsgsLaplaceMean = 100.0 // TODO change and check
-const fakeMsgsLaplaceScale = (fakeMsgsLaplaceMean / 16) // TODO change and check
+const roundSlotTime = time.Minute
+const FakeMsgsLaplaceMean = 1000.0                       // TODO change and check
+const fakeMsgsLaplaceScale = (FakeMsgsLaplaceMean / 16) // TODO change and check
 const minRoundSlotTime = roundSlotTime / 10
 
 
@@ -184,7 +184,7 @@ var UserAddressesMap UserAddressMapType
 var UserPubKeyMap UserPublicKeyMapType
 var UserPrivKeyMap UserPrivateKeyMapType
 var	myLaplace = distuv.Laplace{
-	fakeMsgsLaplaceMean,
+	FakeMsgsLaplaceMean,
 	fakeMsgsLaplaceScale,
 	laplaceRand.NewSource(uint64(time.Now().UTC().UnixNano())),
 }
