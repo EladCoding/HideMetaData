@@ -15,17 +15,22 @@ type DistributorListener struct {
 
 
 func (l *DistributorListener) GetRoundMsgs(msgs []OnionMessage, replies *[]EncryptedMsg) error {
-	if time.Since(l.GeneralListener.lastRoundTime) < minRoundSlotTime {
-		panic("Round Time was too short.\n")
-	}
+	//if time.Since(l.GeneralListener.lastRoundTime) < minRoundSlotTime {
+	//	panic("Round Time was too short.\n")
+	//} // TODO return that
 	l.GeneralListener.lastRoundTime = time.Now()
-	for _, msg := range msgs {
-		l.GeneralListener.readMessage(msg)
+	wg := &sync.WaitGroup{}
+	wg.Add(len(msgs))
+
+	l.GeneralListener.roundMsgs = make([]OnionMessage, len(msgs))
+	l.GeneralListener.roundSymKeys = make([]SecretKey, len(msgs))
+	for msgIndex, msg := range msgs {
+		go l.GeneralListener.readMessageFromMediator(msg, msgIndex, wg)
 	}
+	wg.Wait()
 	decMsgs, symKeys := l.GeneralListener.readRoundMsgs()
 	*replies = l.GeneralListener.sendRoundMessagesToNextHop(l.GeneralListener.nextHop, decMsgs, symKeys)
 
-	time.Sleep(100*time.Millisecond)
 	return nil
 }
 
@@ -38,7 +43,7 @@ func (l *DistributorListener) listenToDistributorAddress() {
 	inbound, err := net.ListenTCP("tcp", addy)
 	CheckErrToLog(err)
 	rpc.Register(l)
-	go rpc.Accept(inbound)
+	rpc.Accept(inbound)
 }
 
 
@@ -73,7 +78,4 @@ func StartDistributor(name string, num int) {
 	},
 	}
 	listener.listenToDistributorAddress()
-	for {
-		continue
-	}
 }

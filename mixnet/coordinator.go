@@ -13,14 +13,27 @@ type CoordinatorListener struct {
 	GeneralListener GeneralListener
 	startReading         *sync.Mutex
 	wg *sync.WaitGroup
+	coordinatorWaiting *sync.WaitGroup
+	startRound bool
+	startRoundMutex         *sync.RWMutex
 }
 
 
 func (l *CoordinatorListener) GetMessageFromClient(msg OnionMessage, reply *EncryptedMsg) error {
-	l.startReading.Lock()
+	for {
+		l.startReading.Lock()
+		l.startRoundMutex.RLock()
+		coordinatorWaiting := l.startRound
+		l.startRoundMutex.RUnlock()
+		if coordinatorWaiting {
+			l.startReading.Unlock()
+			continue
+		}
+		break
+	}
 	l.wg.Add(1)
 	l.GeneralListener.roundFinished.L.Lock()
-	_, msgIndex := l.GeneralListener.readMessage(msg)
+	_, msgIndex := l.GeneralListener.readMessageFromClient(msg)
 	l.startReading.Unlock()
 	l.GeneralListener.roundFinished.Wait()
 	*reply = l.GeneralListener.roundRepliedMsgs[msgIndex]
@@ -43,16 +56,23 @@ func (l *CoordinatorListener) listenToCoordinatorAddress() {
 
 
 func (l *CoordinatorListener) coordinateRounds() {
-	nextRound := time.Now().Add(roundSlotTime)
+	startTime := time.Now()
+	nextRound := startTime
 	round := 1
 	totalMsgs := 0
 	for { // for each round
+		fmt.Printf("Coordinator: ready for round: %v\n", round)
+		fmt.Printf("%v\n", time.Now().Sub(startTime))
+		nextRound = nextRound.Add(roundSlotTime) // TODO check if its good that the round are slots
 		if timeUntilNextRound := time.Until(nextRound); timeUntilNextRound > 0 {
 			time.Sleep(timeUntilNextRound)
 		}
+		l.startRoundMutex.Lock()
+		l.startRound = true
+		l.startRoundMutex.Unlock()
 		fmt.Printf("Coordinator: round: %v\n", round)
+		fmt.Printf("%v\n", time.Now().Sub(startTime))
 		round += 1
-		nextRound = time.Now().Add(roundSlotTime) // TODO maybe change to slots instead of +1 from now
 		l.startReading.Lock()
 		l.GeneralListener.roundFinished.L.Lock()
 		l.GeneralListener.msgMutex.Lock()
@@ -64,6 +84,9 @@ func (l *CoordinatorListener) coordinateRounds() {
 		l.GeneralListener.roundFinished.Broadcast()
 		l.GeneralListener.roundFinished.L.Unlock()
 		l.wg.Wait()
+		l.startRoundMutex.Lock()
+		l.startRound = false
+		l.startRoundMutex.Unlock()
 		l.startReading.Unlock()
 	}
 }
@@ -95,6 +118,9 @@ func StartCoordinator(name string, num int, nextHopName string) {
 	},
 		&sync.Mutex{},
 		&sync.WaitGroup{},
+		&sync.WaitGroup{},
+		false,
+		&sync.RWMutex{},
 	}
 	listener.listenToCoordinatorAddress()
 	listener.coordinateRounds()

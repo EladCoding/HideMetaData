@@ -15,7 +15,7 @@ type ServerListener struct {
 func (l *ServerListener) GetMessage(msg OnionMessage, reply *EncryptedMsg) error {
 	from := msg.From
 	//log.Printf("Server %v Received OnionMessage:\nFrom: %v, len: %v\n", l.name, from, len(msg.Data))
-	symKey := DecryptKeyForKeyExchange(msg.PubKeyForSecret, DecodePrivateKey(UserPrivKeyMap[l.name]))
+	symKey := DecryptKeyForKeyExchange(msg.PubKeyForSecret, UserPrivKeyMap[l.name])
 	decryptedData, err := symmetricDecryption(msg.Data, symKey)
 	CheckErrToLog(err)
 	decryptedData, err = pkcs7strip(decryptedData, MsgBytes)
@@ -28,7 +28,7 @@ func (l *ServerListener) GetMessage(msg OnionMessage, reply *EncryptedMsg) error
 		//[]byte(fmt.Sprintf("I got ur msg: %s", string(decryptedData))),
 		decryptedData, // TODO change after statistics done
 	}
-	*reply, err = symmetricEncryption(ConvertMsgToBytes(replyMsg), symKey)
+	*reply, err = symmetricEncryption(ConvertReplyMsgToBytes(&replyMsg), symKey)
 	return nil
 }
 

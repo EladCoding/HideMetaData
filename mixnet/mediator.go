@@ -30,14 +30,37 @@ type MediatorListener struct {
 }
 
 
-func (l *GeneralListener) readMessage(msg OnionMessage) (OnionMessage, int) {
+func (l *GeneralListener) readMessageFromClient(msg OnionMessage) (OnionMessage, int) {
 	//from := msg.From
 	//encMsg := msg
-	msg, symKey := DecryptOnionLayer(msg, DecodePrivateKey(UserPrivKeyMap[l.name]))
+	msg, symKey := DecryptOnionLayer(msg, UserPrivKeyMap[l.name])
 	//to := msg.To
 	//log.Printf("Mediator %v Received OnionMessage:\nFrom: %v, To: %v, len: %v\n", l.name, from, to, len(encMsg.Data))
 	msgIndex := l.appendMsgToRound(msg, symKey)
 	return msg, msgIndex
+}
+
+
+func (l *GeneralListener) readMessageFromMediator(encMsg OnionMessage, msgIndex int, wg *sync.WaitGroup) (OnionMessage, int) {
+	msg, symKey := DecryptOnionLayer(encMsg, UserPrivKeyMap[l.name])
+	l.roundMsgs[msgIndex] = msg
+	l.roundSymKeys[msgIndex] = symKey
+	wg.Done()
+	return msg, msgIndex
+}
+
+
+func (l *GeneralListener) sendMsgToServer(msg OnionMessage, msgIndex int, curRoundRepliedMsgs []EncryptedMsg,
+	replyFromServerMutex *sync.Mutex, wg *sync.WaitGroup) {
+	var reply *EncryptedMsg
+	destinitionServer := msg.To
+	client := l.clients[destinitionServer]
+	err := client.Call("ServerListener.GetMessage", msg, &reply)
+	CheckErrToLog(err)
+	replyFromServerMutex.Lock()
+	curRoundRepliedMsgs[msgIndex] = *reply
+	replyFromServerMutex.Unlock()
+	wg.Done()
 }
 
 
@@ -52,15 +75,14 @@ func (l *GeneralListener) sendRoundMessagesToNextHop(nextHop *rpc.Client, curRou
 	curRoundShuffledMsgs, curRoundPerm := shuffleMsgs(curRoundMsgs)
 
 	if l.isDistributor {
-		curRoundRepliedMsgs = make([]EncryptedMsg, 0)
-		for _, msg := range curRoundShuffledMsgs {
-			var reply *EncryptedMsg
-			destinitionServer := msg.To
-			client := l.clients[destinitionServer]
-			err := client.Call("ServerListener.GetMessage", msg, &reply)
-			CheckErrToLog(err)
-			curRoundRepliedMsgs = append(curRoundRepliedMsgs, *reply)
+		curRoundRepliedMsgs = make([]EncryptedMsg, len(curRoundShuffledMsgs))
+		replyFromServerMutex := &sync.Mutex{} // TODO maybe mutex not needed because we put the reply in a specific spot
+		wg := &sync.WaitGroup{}
+		wg.Add(len(curRoundShuffledMsgs))
+		for msgIndex, msg := range curRoundShuffledMsgs {
+			go l.sendMsgToServer(msg, msgIndex, curRoundRepliedMsgs, replyFromServerMutex, wg)
 		}
+		wg.Wait()
 	} else if l.isCoordinator {
 		err := nextHop.Call("MediatorListener.GetRoundMsgs", curRoundShuffledMsgs, &curRoundRepliedMsgs)
 		CheckErrToLog(err)
@@ -81,13 +103,19 @@ func (l *GeneralListener) sendRoundMessagesToNextHop(nextHop *rpc.Client, curRou
 
 
 func (l *MediatorListener) GetRoundMsgs(msgs []OnionMessage, replies *[]EncryptedMsg) error {
-	if time.Since(l.GeneralListener.lastRoundTime) < minRoundSlotTime {
-		panic("Round Time was too short.\n")
-	}
+	//if time.Since(l.GeneralListener.lastRoundTime) < minRoundSlotTime {
+	//	panic("Round Time was too short.\n")
+	//} // TODO return that
 	l.GeneralListener.lastRoundTime = time.Now()
-	for _, msg := range msgs {
-		l.GeneralListener.readMessage(msg)
+	wg := &sync.WaitGroup{}
+	wg.Add(len(msgs))
+
+	l.GeneralListener.roundMsgs = make([]OnionMessage, len(msgs))
+	l.GeneralListener.roundSymKeys = make([]SecretKey, len(msgs))
+	for msgIndex, msg := range msgs {
+		go l.GeneralListener.readMessageFromMediator(msg, msgIndex, wg)
 	}
+	wg.Wait()
 	decMsgs, symKeys := l.GeneralListener.readRoundMsgs()
 	*replies = l.GeneralListener.sendRoundMessagesToNextHop(l.GeneralListener.nextHop, decMsgs, symKeys)
 
@@ -122,7 +150,7 @@ func (l *MediatorListener) listenToMediatorAddress() {
 	inbound, err := net.ListenTCP("tcp", addy)
 	CheckErrToLog(err)
 	rpc.Register(l)
-	go rpc.Accept(inbound)
+	rpc.Accept(inbound)
 }
 
 
@@ -153,7 +181,4 @@ func StartMediator(name string, num int, nextHopName string) {
 	}
 
 	listener.listenToMediatorAddress()
-	for {
-		continue
-	}
 }

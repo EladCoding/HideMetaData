@@ -7,6 +7,14 @@ import (
 )
 
 
+func sendAlittleMsg(i int, serverName string, clientDonePipe chan bool, serverNamePipe chan string, messagesPipe chan string) {
+	msg := fmt.Sprintf("%v", i)
+	clientDonePipe <- false
+	serverNamePipe <- serverName
+	messagesPipe <- msg
+}
+
+
 func spamMixNet(clientName string, serverName string, numberOfMsgs int,	durationPipe chan time.Duration) {
 
 	serverNamePipe := make(chan string)
@@ -16,12 +24,11 @@ func spamMixNet(clientName string, serverName string, numberOfMsgs int,	duration
 	time.Sleep(time.Second)
 
 	startTime := time.Now()
+	nextRound := startTime
 	for i := 0; i < numberOfMsgs; i += 1 {
-		clientDonePipe <- false
-		serverNamePipe <- serverName
-		msg := fmt.Sprintf("%v", i)
-		messagesPipe <- msg
-		time.Sleep(2*time.Millisecond)
+		nextRound = nextRound.Add(500 * time.Microsecond)
+		time.Sleep(time.Until(nextRound))
+		sendAlittleMsg(i, serverName, clientDonePipe, serverNamePipe, messagesPipe)
 	}
 	clientDonePipe <- true
 	if <- clientDonePipe {
@@ -62,13 +69,13 @@ func sendNiceMsgs(clientName string, serverName string, numberOfMsgs int, durati
 func RunStatistics() {
 	CreateUsersMap()
 	go runMixNetWithoutClients()
-	time.Sleep(time.Second)
+	time.Sleep(2*time.Second)
 
 	spamClientName := "201"
 	niceClientName := "202"
 	serverName := "001"
-	numberOfSpamMsgs := 1000000
-	numberOfNiceMsgs := 100
+	numberOfSpamMsgs := 100000
+	numberOfNiceMsgs := 1
 	spammingDurationPipe := make(chan time.Duration)
 	latencyDurationPipe := make(chan time.Duration)
 	go spamMixNet(spamClientName, serverName, numberOfSpamMsgs, spammingDurationPipe)
@@ -78,7 +85,9 @@ func RunStatistics() {
 
 	latencyDuration := <-latencyDurationPipe
 	spammingDuration := <- spammingDurationPipe
+	numberOfMsgsPerSecond := numberOfSpamMsgs / int(spammingDuration / time.Second)
 
-	fmt.Printf("----------Statistics----------\nFinished sending:\n%v msgs\n%v fakeMsgs (mean) each round\nafter: %v\nlatencyDuration is: %v\n",
-		numberOfSpamMsgs, mixnet.FakeMsgsLaplaceMean, spammingDuration, latencyDuration)
+	fmt.Printf("----------Statistics----------\nFinished sending:\n%v msgs\n%v fakeMsgs (mean) each round\n" +
+		"after: %v\nlatencyDuration is: %v\n msgPerSecond (without fakes): %v\n",
+		numberOfSpamMsgs, mixnet.FakeMsgsLaplaceMean, spammingDuration, latencyDuration, numberOfMsgsPerSecond)
 }
