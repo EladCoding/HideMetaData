@@ -9,18 +9,23 @@ import (
 	"os"
 )
 
-func main() {
+
+func prepareRun() {
 	scripts.CreateUsersMap()
 	mixnet.UserAddressesMap = mixnet.ReadUserAddressMap()
 	mixnet.UserPubKeyMap = mixnet.ReadUserPubKeyMap()
 	mixnet.UserPrivKeyMap = mixnet.ReadUserPrivKeyMap()
+	gob.Register(elliptic.P256())
+}
 
+
+func main() {
+	prepareRun()
 	args := os.Args
 	var runningChoice string
 	if len(args) > 1 {
 		runningChoice = args[1]
 	}
-	gob.Register(elliptic.P256())
 	switch runningChoice {
 	case "1":
 		scripts.RunningExample()
