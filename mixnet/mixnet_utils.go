@@ -34,7 +34,7 @@ const UserNameLen = 3
 const AddressSpot = 0
 const PublicKeyPathSpot = 1
 const PrivateKeyPathSpot = 2
-const roundSlotTime = time.Minute
+const roundSlotTime = 20 * time.Second
 const FakeMsgsLaplaceMean = 1000.0                       // TODO change and check
 const fakeMsgsLaplaceScale = (FakeMsgsLaplaceMean / 16) // TODO change and check
 const minRoundSlotTime = roundSlotTime / 10
@@ -51,25 +51,33 @@ func ReadUserAddressMap() UserAddressMapType { // TODO change
 }
 
 
-func ReadUserPubKeyMap() UserPublicKeyMapType { // TODO change
-	var usersMap UserPublicKeyMapType
+func ReadUserPubKeyMap() UserDecodedPublicKeyMapType { // TODO change
+	var encodedUsersMap UserEncodedPublicKeyMapType
+	decodedUsersMap := make(UserDecodedPublicKeyMapType, 0)
 	jsonFile, err := os.Open(UserPublicKeysMapPath)
 	CheckErrAndPanic(err)
 	defer jsonFile.Close()
 	jsonByteValue, _ := ioutil.ReadAll(jsonFile)
-	json.Unmarshal(jsonByteValue, &usersMap)
-	return usersMap
+	json.Unmarshal(jsonByteValue, &encodedUsersMap)
+	for pubKeyIndex, pubKey := range encodedUsersMap {
+		decodedUsersMap[pubKeyIndex] = DecodePublicKey(pubKey)
+	}
+	return decodedUsersMap
 }
 
 
-func ReadUserPrivKeyMap() UserPrivateKeyMapType { // TODO change
-	var usersMap UserPrivateKeyMapType
+func ReadUserPrivKeyMap() UserDecodedPrivateKeyMapType { // TODO change
+	var encodedUsersMap UserEncodedPrivateKeyMapType
+	decodedUsersMap := make(UserDecodedPrivateKeyMapType, 0)
 	jsonFile, err := os.Open(UserPrivateKeysMapPath)
 	CheckErrAndPanic(err)
 	defer jsonFile.Close()
 	jsonByteValue, _ := ioutil.ReadAll(jsonFile)
-	json.Unmarshal(jsonByteValue, &usersMap)
-	return usersMap
+	json.Unmarshal(jsonByteValue, &encodedUsersMap)
+	for privKeyIndex, privKey := range encodedUsersMap {
+		decodedUsersMap[privKeyIndex] = DecodePrivateKey(privKey)
+	}
+	return decodedUsersMap
 }
 
 
@@ -92,10 +100,19 @@ func reverseShufflingReplyMsgs(msgs []EncryptedMsg, perm []int) []EncryptedMsg {
 }
 
 
-func ConvertMsgToBytes(onionMsg interface{}) EncryptedMsg {
+func ConvertReplyMsgToBytes(replyMsg *ReplyMessage) EncryptedMsg {
 	var inpBuf bytes.Buffer
 	enc := gob.NewEncoder(&inpBuf)
-	err := enc.Encode(onionMsg)
+	err := enc.Encode(*replyMsg)
+	CheckErrToLog(err)
+	return inpBuf.Bytes()
+}
+
+
+func ConvertOnionMsgToBytes(onionMsg *OnionMessage) EncryptedMsg {
+	var inpBuf bytes.Buffer
+	enc := gob.NewEncoder(&inpBuf)
+	err := enc.Encode(*onionMsg)
 	CheckErrToLog(err)
 	return inpBuf.Bytes()
 }
@@ -133,7 +150,7 @@ func createOnionMessage(name string, serverName string, msgData []byte, mediator
 	hopesArr := append(mediatorsArr, serverName)
 	for index, _ := range hopesArr {
 		if index > 0 {
-			curOnionData = ConvertMsgToBytes(onionMsg)
+			curOnionData = ConvertOnionMsgToBytes(&onionMsg)
 		}
 		curHop := hopesArr[len(hopesArr)-index-1]
 		curOnionData, curPubKey, curSymKey = hybridEncription(curOnionData, curHop)
@@ -175,14 +192,15 @@ func DecryptOnionLayer(onionMsg OnionMessage, privKey *ecdsa.PrivateKey) (OnionM
 
 
 func sampleFromLaplace() int {
+	return 0 // TODO remove
 	numOfFakes := int(myLaplace.Rand())
 	return intMax(numOfFakes, 0)
 }
 
 
 var UserAddressesMap UserAddressMapType
-var UserPubKeyMap UserPublicKeyMapType
-var UserPrivKeyMap UserPrivateKeyMapType
+var UserPubKeyMap UserDecodedPublicKeyMapType
+var UserPrivKeyMap UserDecodedPrivateKeyMapType
 var	myLaplace = distuv.Laplace{
 	FakeMsgsLaplaceMean,
 	fakeMsgsLaplaceScale,

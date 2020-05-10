@@ -38,7 +38,7 @@ func DecryptKeyForKeyExchange(sourcePubKey ecdsa.PublicKey, privKey *ecdsa.Priva
 
 
 func hybridEncription(plaintext []byte, destName string) ([]byte, ecdsa.PublicKey, SecretKey) {
-	destPubKey := DecodePublicKey(UserPubKeyMap[destName])
+	destPubKey := UserPubKeyMap[destName]
 	sharedSecret, pubKey := EncryptKeyForKeyExchange(*destPubKey)
 	if len(sharedSecret) != 32 {
 		print(len(sharedSecret))

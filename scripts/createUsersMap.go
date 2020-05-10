@@ -20,8 +20,8 @@ func GenerateAsymmetricKeyPair() (*ecdsa.PrivateKey, ecdsa.PublicKey) {
 
 func CreateUsersMap() {
 	userAddresses := make(mixnet.UserAddressMapType, 0)
-	userPublicKeys := make(mixnet.UserPublicKeyMapType, 0)
-	userPrivateKeys := make(mixnet.UserPrivateKeyMapType, 0)
+	userPublicKeys := make(mixnet.UserEncodedPublicKeyMapType, 0)
+	userPrivateKeys := make(mixnet.UserEncodedPrivateKeyMapType, 0)
 	for _, userName := range mixnet.UserNames {
 		userAddresses[userName] = fmt.Sprintf(mixnet.AddressFormat, userName)
 		privateKey, publicKey := GenerateAsymmetricKeyPair()

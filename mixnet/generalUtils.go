@@ -14,8 +14,10 @@ import (
 )
 
 type UserAddressMapType map[string]string
-type UserPublicKeyMapType map[string]string
-type UserPrivateKeyMapType map[string]string
+type UserEncodedPublicKeyMapType map[string]string
+type UserDecodedPublicKeyMapType map[string]*ecdsa.PublicKey
+type UserEncodedPrivateKeyMapType map[string]string
+type UserDecodedPrivateKeyMapType map[string]*ecdsa.PrivateKey
 type ClientsMap map[string]*rpc.Client
 type SecretKey []byte
 type EncryptedMsg []byte
