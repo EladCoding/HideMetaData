@@ -81,7 +81,7 @@ func sendSpecificMessage(name string, serverName string, msg []byte, client *rpc
 				wg.Done()
 			}
 		} else {
-			panic(fmt.Sprintf("Reply don't feet.\nmsg: %v\nreply: %v\n", string(orgMsg), string(replyMsg.Data)))
+			panic(fmt.Sprintf("Reply doesn't feet.\nmsg: %v\nreply: %v\n", string(orgMsg), string(replyMsg.Data)))
 		}
 	} else {
 		log.Printf("Client %v got reply message:\nFrom: %v, Data: %v\n", name, replyMsg.From, string(replyMsg.Data))
@@ -139,6 +139,7 @@ func StartClient(name string, statistics bool, spammingStatistics bool, goodputS
 			}
 		}
 		if !statistics {
+			fmt.Print("Client: Sleep 100 Mil\n")
 			time.Sleep(100 * time.Millisecond)
 		}
 	}
