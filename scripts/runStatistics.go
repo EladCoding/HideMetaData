@@ -26,7 +26,7 @@ func spamMixNet(clientName string, serverName string, numberOfMsgs int,	duration
 	startTime := time.Now()
 	nextRound := startTime
 	for i := 0; i < numberOfMsgs; i += 1 {
-		nextRound = nextRound.Add(500 * time.Microsecond)
+		nextRound = nextRound.Add(1000 * time.Microsecond)
 		time.Sleep(time.Until(nextRound))
 		sendAlittleMsg(i, serverName, clientDonePipe, serverNamePipe, messagesPipe)
 	}

@@ -19,7 +19,8 @@ type CoordinatorListener struct {
 }
 
 
-func (l *CoordinatorListener) GetMessageFromClient(msg OnionMessage, reply *EncryptedMsg) error {
+func (l *CoordinatorListener) GetMessageFromClient(encMsg OnionMessage, reply *EncryptedMsg) error {
+	decMsg, symKey := DecryptOnionLayer(encMsg, UserPrivKeyMap[l.GeneralListener.name])
 	for {
 		l.startReading.Lock()
 		l.startRoundMutex.RLock()
@@ -33,7 +34,7 @@ func (l *CoordinatorListener) GetMessageFromClient(msg OnionMessage, reply *Encr
 	}
 	l.wg.Add(1)
 	l.GeneralListener.roundFinished.L.Lock()
-	_, msgIndex := l.GeneralListener.readMessageFromClient(msg)
+	msgIndex := l.GeneralListener.appendMsgToRound(decMsg, symKey)
 	l.startReading.Unlock()
 	l.GeneralListener.roundFinished.Wait()
 	*reply = l.GeneralListener.roundRepliedMsgs[msgIndex]

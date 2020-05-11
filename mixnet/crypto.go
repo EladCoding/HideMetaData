@@ -11,6 +11,9 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	//"go.dedis.ch/kyber/group/edwards25519"
+	//"go.dedis.ch/kyber/util/random"
+	//"go.dedis.ch/kyber/encrypt/ecies"
 )
 
 
@@ -35,6 +38,16 @@ func DecryptKeyForKeyExchange(sourcePubKey ecdsa.PublicKey, privKey *ecdsa.Priva
 	sharedSecret := sha256.Sum256(b.Bytes())
 	return sharedSecret[:]
 }
+
+
+//func hybridEncription(plaintext []byte, destName string) ([]byte) {
+//	destPubKey := UserPubKeyMap[destName]
+//
+//	suite := edwards25519.NewBlakeSHA256Ed25519()
+//	cipherMsgData, _ := ecies.Encrypt(suite, destPubKey, plaintext, suite.Hash)
+//
+//	return cipherMsgData
+//}
 
 
 func hybridEncription(plaintext []byte, destName string) ([]byte, ecdsa.PublicKey, SecretKey) {
