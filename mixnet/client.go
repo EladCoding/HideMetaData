@@ -59,7 +59,7 @@ func convertStringToMessages(message string) [][]byte {
 
 
 func sendSpecificMessage(name string, serverName string, msg []byte, client *rpc.Client, wg *sync.WaitGroup,
-	statistics bool, spammingStatistics bool) {
+	automaticTesting bool, statistics bool, spammingStatistics bool, receivedMessagesPipe chan string) {
 	cipherMsg, symKeys := createOnionMessage(name, serverName, msg, MediatorNames)
 	var reply EncryptedMsg
 	err := client.Call("CoordinatorListener.GetMessageFromClient", cipherMsg, &reply)
@@ -73,24 +73,19 @@ func sendSpecificMessage(name string, serverName string, msg []byte, client *rpc
 		CheckErrAndPanic(err)
 	}
 	replyMsg := ConvertBytesToReplyMsg(reply)
-	orgMsg, _ := pkcs7strip(msg, MsgBytes)
 
-	if statistics {
-		if string(replyMsg.Data) == string(orgMsg) {
-			if spammingStatistics {
-				wg.Done()
-			}
-		} else {
-			panic(fmt.Sprintf("Reply doesn't feet.\nmsg: %v\nreply: %v\n", string(orgMsg), string(replyMsg.Data)))
-		}
-	} else {
+	if automaticTesting {
+		receivedMessagesPipe <- string(replyMsg.Data)
+	} else if spammingStatistics {
+		wg.Done()
+	} else if !statistics {
 		log.Printf("Client %v got reply message:\nFrom: %v, Data: %v\n", name, replyMsg.From, string(replyMsg.Data))
 	}
 }
 
 
-func StartClient(name string, statistics bool, spammingStatistics bool, goodputStatistics bool,
-	serverNamePipe chan string, massagePipe chan string, donePipe chan bool, durationPipe chan time.Duration) {
+func StartClient(name string, automaticTesting bool, statistics bool, spammingStatistics bool, goodputStatistics bool,
+	serverNamePipe chan string, massagePipe chan string, donePipe chan bool, durationPipe chan time.Duration, receivedMessagesPipe chan string) {
 	var serverName string
 	var userSplittedMsg [][]byte
 	fmt.Printf("Starting Client %v...\n", name)
@@ -99,7 +94,7 @@ func StartClient(name string, statistics bool, spammingStatistics bool, goodputS
 	CheckErrToLog(err)
 	wg := &sync.WaitGroup{}
 	for {
-		if statistics {
+		if statistics || automaticTesting {
 			if <- donePipe {
 				if spammingStatistics {
 					wg.Wait()
@@ -121,7 +116,7 @@ func StartClient(name string, statistics bool, spammingStatistics bool, goodputS
 			fmt.Printf("Server %s size is weird!\n", serverName)
 			continue
 		}
-		if statistics {
+		if statistics || automaticTesting{
 			userSplittedMsg = convertStringToMessages(<-massagePipe)
 		} else {
 			userSplittedMsg = getMessageFromUser(serverName)
@@ -129,21 +124,21 @@ func StartClient(name string, statistics bool, spammingStatistics bool, goodputS
 		for _, msg := range userSplittedMsg {
 			if spammingStatistics {
 				wg.Add(1)
-				go sendSpecificMessage(name, serverName, msg, client, wg, statistics, spammingStatistics)
+				go sendSpecificMessage(name, serverName, msg, client, wg, automaticTesting, statistics, spammingStatistics, receivedMessagesPipe)
 			} else if goodputStatistics {
 				start := time.Now()
-				sendSpecificMessage(name, serverName, msg, client, nil, statistics, spammingStatistics)
+				sendSpecificMessage(name, serverName, msg, client, nil, automaticTesting, statistics, spammingStatistics, receivedMessagesPipe)
 				durationPipe <- time.Since(start)
 			} else {
-				sendSpecificMessage(name, serverName, msg, client, nil, statistics, spammingStatistics)
+				sendSpecificMessage(name, serverName, msg, client, nil, automaticTesting, statistics, spammingStatistics, receivedMessagesPipe)
 			}
 		}
-		if !statistics {
+		if !(statistics || automaticTesting) {
 			fmt.Print("Client: Sleep 100 Mil\n")
 			time.Sleep(100 * time.Millisecond)
 		}
 	}
-	if spammingStatistics {
+	if spammingStatistics || automaticTesting {
 		donePipe <- true
 	}
 }

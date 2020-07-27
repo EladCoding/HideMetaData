@@ -34,10 +34,9 @@ const UserNameLen = 3
 const AddressSpot = 0
 const PublicKeyPathSpot = 1
 const PrivateKeyPathSpot = 2
-const roundSlotTime = 20 * time.Second
+var RoundSlotTime = 20 * time.Second
 const FakeMsgsLaplaceMean = 1000.0                       // TODO change and check
 const fakeMsgsLaplaceScale = (FakeMsgsLaplaceMean / 16) // TODO change and check
-const minRoundSlotTime = roundSlotTime / 10
 
 
 func ReadUserAddressMap() UserAddressMapType { // TODO change

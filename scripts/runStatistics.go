@@ -7,7 +7,7 @@ import (
 )
 
 
-func sendAlittleMsg(i int, serverName string, clientDonePipe chan bool, serverNamePipe chan string, messagesPipe chan string) {
+func sendSpammingMsg(i int, serverName string, clientDonePipe chan bool, serverNamePipe chan string, messagesPipe chan string) {
 	msg := fmt.Sprintf("%v", i)
 	clientDonePipe <- false
 	serverNamePipe <- serverName
@@ -15,20 +15,21 @@ func sendAlittleMsg(i int, serverName string, clientDonePipe chan bool, serverNa
 }
 
 
-func spamMixNet(clientName string, serverName string, numberOfMsgs int,	durationPipe chan time.Duration) {
+func spamMixNet(clientName string, serverName string, numberOfMsgs int,	durationPipe chan time.Duration, slotDuration time.Duration) {
 
 	serverNamePipe := make(chan string)
 	messagesPipe := make(chan string)
 	clientDonePipe := make(chan bool)
-	go mixnet.StartClient(clientName, true, true, false, serverNamePipe, messagesPipe, clientDonePipe, nil)
+	go mixnet.StartClient(clientName, false, true, true, false, serverNamePipe, messagesPipe, clientDonePipe, nil, nil)
 	time.Sleep(time.Second)
 
 	startTime := time.Now()
 	nextRound := startTime
+	
 	for i := 0; i < numberOfMsgs; i += 1 {
-		nextRound = nextRound.Add(1000 * time.Microsecond)
 		time.Sleep(time.Until(nextRound))
-		sendAlittleMsg(i, serverName, clientDonePipe, serverNamePipe, messagesPipe)
+		sendSpammingMsg(i, serverName, clientDonePipe, serverNamePipe, messagesPipe)
+		nextRound = nextRound.Add(slotDuration)
 	}
 	clientDonePipe <- true
 	if <- clientDonePipe {
@@ -46,7 +47,7 @@ func sendNiceMsgs(clientName string, serverName string, numberOfMsgs int, durati
 	messagesPipe := make(chan string)
 	clientDonePipe := make(chan bool)
 	clientDurationPipe := make(chan time.Duration)
-	go mixnet.StartClient(clientName, true, false, true, serverNamePipe, messagesPipe, clientDonePipe, clientDurationPipe)
+	go mixnet.StartClient(clientName,false,  true, false, true, serverNamePipe, messagesPipe, clientDonePipe, clientDurationPipe, nil)
 	time.Sleep(time.Second)
 
 	totalDuration := time.Duration(0)
@@ -78,7 +79,7 @@ func RunStatistics() {
 	numberOfNiceMsgs := 1
 	spammingDurationPipe := make(chan time.Duration)
 	latencyDurationPipe := make(chan time.Duration)
-	go spamMixNet(spamClientName, serverName, numberOfSpamMsgs, spammingDurationPipe)
+	go spamMixNet(spamClientName, serverName, numberOfSpamMsgs, spammingDurationPipe, time.Second)
 	time.Sleep(time.Second)
 
 	go sendNiceMsgs(niceClientName, serverName, numberOfNiceMsgs, latencyDurationPipe)

@@ -64,7 +64,7 @@ func (l *CoordinatorListener) coordinateRounds() {
 	for { // for each round
 		fmt.Printf("Coordinator: ready for round: %v\n", round)
 		fmt.Printf("%v\n", time.Now().Sub(startTime))
-		nextRound = nextRound.Add(roundSlotTime) // TODO check if its good that the round are slots
+		nextRound = nextRound.Add(RoundSlotTime) // TODO check if its good that the round are slots
 		if timeUntilNextRound := time.Until(nextRound); timeUntilNextRound > 0 {
 			time.Sleep(timeUntilNextRound)
 		}
