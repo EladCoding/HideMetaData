@@ -77,7 +77,7 @@ func RunStatistics() {
 	niceClientName := "202"
 	serverName := "001"
 	numberOfSpamMsgs := 200000
-	slotDuration := time.Millisecond
+	slotDuration := 200 * time.Microsecond
 	roundDuration := mixnet.RoundSlotTime
 	maxMsgsPerRound := int(roundDuration / slotDuration)
 	minimumRounds := int(numberOfSpamMsgs) / maxMsgsPerRound
