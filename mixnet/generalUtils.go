@@ -11,6 +11,7 @@ import (
 	"os"
 	"path"
 	"path/filepath"
+	"runtime"
 )
 
 type UserAddressMapType map[string]string
@@ -126,3 +127,12 @@ func intMax(a int, b int) int {
 		return b
 	}
 }
+
+
+func GetMemUsage() float64 {
+	var m runtime.MemStats
+	runtime.ReadMemStats(&m)
+	return float64(m.Alloc) / float64(m.Sys)
+
+}
+
