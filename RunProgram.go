@@ -9,7 +9,6 @@ import (
 	"os"
 )
 
-
 func prepareRun() {
 	scripts.CreateUsersMap()
 	mixnet.UserAddressesMap = mixnet.ReadUserAddressMap()
@@ -17,7 +16,6 @@ func prepareRun() {
 	mixnet.UserPrivKeyMap = mixnet.ReadUserPrivKeyMap()
 	gob.Register(elliptic.P256())
 }
-
 
 func main() {
 	prepareRun()
@@ -28,19 +26,19 @@ func main() {
 	}
 	switch runningChoice {
 	case "1":
-		fmt.Printf("--------------------Run Running example--------------------")
+		fmt.Printf("--------------------Run Running example--------------------\n")
 		scripts.RunningExample()
 	case "2":
-		fmt.Printf("--------------------Run Statistics--------------------")
+		fmt.Printf("--------------------Run Statistics--------------------\n")
 		scripts.RunStatistics()
 	case "3":
-		fmt.Printf("--------------------Run Automatic Tests--------------------")
+		fmt.Printf("--------------------Run Automatic Tests--------------------\n")
 		scripts.RunAutomaticTests()
 	case "4":
-		fmt.Printf("--------------------Run InfraStructure--------------------")
+		fmt.Printf("--------------------Run InfraStructure--------------------\n")
 		scripts.RunInfrastructure()
 	case "5":
-		fmt.Printf("--------------------Run One node--------------------")
+		fmt.Printf("--------------------Run One node--------------------\n")
 		if len(os.Args) < 4 {
 			msg := "please choose mode and name\n"
 			fmt.Printf(msg)
