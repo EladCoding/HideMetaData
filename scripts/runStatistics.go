@@ -25,9 +25,9 @@ func spamMixNet(clientName string, serverName string, numberOfMsgs int, duration
 	nextRound := startTime
 
 	for i := 0; i < numberOfMsgs; i += 1 {
-		//time.Sleep(time.Until(nextRound))
+		time.Sleep(time.Until(nextRound))
 		memUsage := mixnet.GetMemUsage()
-		if memUsage > 0.8 {
+		if memUsage > 0.7 {
 			fmt.Printf("Memory Usage: %v\n", memUsage)
 			time.Sleep(slotDuration)
 		}
@@ -84,7 +84,7 @@ func RunStatistics() {
 	numberOfNiceMsgs := minimumRounds / 4
 	spammingDurationPipe := make(chan time.Duration)
 	latencyDurationPipe := make(chan time.Duration)
-	go spamMixNet(spamClientName, serverName, numberOfSpamMsgs, spammingDurationPipe, time.Second)
+	go spamMixNet(spamClientName, serverName, numberOfSpamMsgs, spammingDurationPipe, slotDuration)
 	time.Sleep(time.Second)
 
 	go sendNiceMsgs(niceClientName, serverName, numberOfNiceMsgs, latencyDurationPipe)
