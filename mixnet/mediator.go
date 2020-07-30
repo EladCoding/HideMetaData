@@ -1,7 +1,7 @@
 package mixnet
 
 import (
-	"fmt"
+	"log"
 	"net"
 	"net/rpc"
 	"sync"
@@ -86,7 +86,6 @@ func (l *GeneralListener) sendRoundMessagesToNextHop(nextHop *rpc.Client, curRou
 		unShuffledCurRoundRepliedMsgs[index], err = symmetricEncryption(msg, curRoundSymKeys[index])
 		CheckErrAndPanic(err)
 	}
-	//fmt.Printf("unshuffle len: %v", len(unShuffledCurRoundRepliedMsgs))
 	return unShuffledCurRoundRepliedMsgs
 }
 
@@ -133,7 +132,7 @@ func (l *GeneralListener) readRoundMsgs() ([]OnionMessage, []SecretKey) {
 
 func (l *MediatorListener) listenToMediatorAddress() {
 	address := UserAddressesMap[l.GeneralListener.name]
-	fmt.Printf("name: %v. listen to address: %v\n", l.GeneralListener.name, address)
+	log.Printf("name: %v. listen to address: %v\n", l.GeneralListener.name, address)
 	addy, err := net.ResolveTCPAddr("tcp", address)
 	CheckErrToLog(err)
 	inbound, err := net.ListenTCP("tcp", addy)
@@ -144,7 +143,7 @@ func (l *MediatorListener) listenToMediatorAddress() {
 
 
 func StartMediator(name string, num int, nextHopName string) {
-	fmt.Printf("Starting Mediator %v...\n", name)
+	log.Printf("Starting Mediator %v...\n", name)
 	var nextHop *rpc.Client
 	var err error
 	nextHopAddress := UserAddressesMap[nextHopName]

@@ -1,7 +1,7 @@
 package mixnet
 
 import (
-	"fmt"
+	"log"
 	"net"
 	"net/rpc"
 	"sync"
@@ -37,7 +37,7 @@ func (l *DistributorListener) GetRoundMsgs(msgs []OnionMessage, replies *[]Encry
 
 func (l *DistributorListener) listenToDistributorAddress() {
 	address := UserAddressesMap[l.GeneralListener.name]
-	fmt.Printf("name: %v. listen to address: %v\n", l.GeneralListener.name, address)
+	log.Printf("name: %v. listen to address: %v\n", l.GeneralListener.name, address)
 	addy, err := net.ResolveTCPAddr("tcp", address)
 	CheckErrToLog(err)
 	inbound, err := net.ListenTCP("tcp", addy)
@@ -48,7 +48,7 @@ func (l *DistributorListener) listenToDistributorAddress() {
 
 
 func StartDistributor(name string, num int) {
-	fmt.Printf("Starting Distributor %v...\n", name)
+	log.Printf("Starting Distributor %v...\n", name)
 	var client *rpc.Client
 	var clients map[string]*rpc.Client
 	var err error

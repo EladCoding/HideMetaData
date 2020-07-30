@@ -3,6 +3,7 @@ package scripts
 import (
 	"fmt"
 	"github.com/EladCoding/HideMetaData/mixnet"
+	"log"
 	"time"
 )
 
@@ -27,16 +28,16 @@ func spamMixNet(clientName string, serverName string, numberOfMsgs int, duration
 	for i := 0; i < numberOfMsgs; i += 1 {
 		time.Sleep(time.Until(nextRound))
 		memUsage := mixnet.GetMemUsage()
-		if memUsage > 0.7 {
+		if memUsage > 0.73 {
 			fmt.Printf("Memory Usage: %v\n", memUsage)
-			time.Sleep(slotDuration)
+			time.Sleep(10*slotDuration)
 		}
 		sendSpammingMsg(i, serverName, clientDonePipe, serverNamePipe, messagesPipe)
 		nextRound = nextRound.Add(slotDuration)
 	}
 	clientDonePipe <- true
 	if <-clientDonePipe {
-		fmt.Printf("Statistics: FinishSpamming.\n")
+		log.Printf("Statistics: FinishSpamming.\n")
 	} else {
 		panic("What.\n")
 	}
@@ -61,10 +62,10 @@ func sendNiceMsgs(clientName string, serverName string, numberOfMsgs int, durati
 		messagesPipe <- msg
 		curMsgLatency = <-clientDurationPipe
 		totalDuration += curMsgLatency
-		fmt.Printf("Statistics: curMsg latency: %v\n", curMsgLatency)
+		log.Printf("Statistics: curMsg latency: %v\n", curMsgLatency)
 	}
 	clientDonePipe <- true
-	fmt.Printf("Statistics: Finish latency..\n")
+	log.Printf("Statistics: Finish latency..\n")
 	durationPipe <- totalDuration / time.Duration(numberOfMsgs)
 }
 
@@ -77,11 +78,16 @@ func RunStatistics() {
 	niceClientName := "202"
 	serverName := "001"
 	numberOfSpamMsgs := 200000
-	slotDuration := 200 * time.Microsecond
+	slotDuration := 280 * time.Microsecond
 	roundDuration := mixnet.RoundSlotTime
 	maxMsgsPerRound := int(roundDuration / slotDuration)
-	minimumRounds := int(numberOfSpamMsgs) / maxMsgsPerRound
+	minimumRounds := numberOfSpamMsgs / maxMsgsPerRound
 	numberOfNiceMsgs := minimumRounds / 4
+	if numberOfNiceMsgs < 1 {
+		numberOfNiceMsgs = 1
+	} else if numberOfNiceMsgs > 4 {
+		numberOfNiceMsgs = 4
+	}
 	spammingDurationPipe := make(chan time.Duration)
 	latencyDurationPipe := make(chan time.Duration)
 	go spamMixNet(spamClientName, serverName, numberOfSpamMsgs, spammingDurationPipe, slotDuration)
@@ -91,7 +97,8 @@ func RunStatistics() {
 
 	latencyDuration := <-latencyDurationPipe
 	spammingDuration := <-spammingDurationPipe
-	numberOfMsgsPerSecond := numberOfSpamMsgs / int(spammingDuration/time.Second)
+	numberOfMsgsPerSecond := (float64(numberOfSpamMsgs) / float64(spammingDuration) * float64(time.Second))
+	msgsLimitPerSecond := int(time.Second / slotDuration)
 
 	fmt.Printf("----------Statistics----------\n"+
 		"Finished sending:\n"+
@@ -99,6 +106,7 @@ func RunStatistics() {
 		"%v fakeMsgs (mean) each round\n"+
 		"after: %v\n"+
 		"latencyDuration is: %v\n"+
-		"msgPerSecond (without fakes): %v\n",
-		numberOfSpamMsgs, mixnet.FakeMsgsLaplaceMean, spammingDuration, latencyDuration, numberOfMsgsPerSecond)
+		"msgPerSecond (without fakes): %v\n"+
+		"msgLimitPerSecond (without fakes): %v\n",
+		numberOfSpamMsgs, mixnet.FakeMsgsLaplaceMean, spammingDuration, latencyDuration, numberOfMsgsPerSecond, msgsLimitPerSecond)
 }

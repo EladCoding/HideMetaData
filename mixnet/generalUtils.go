@@ -12,6 +12,7 @@ import (
 	"path"
 	"path/filepath"
 	"runtime"
+	"time"
 )
 
 type UserAddressMapType map[string]string
@@ -134,5 +135,26 @@ func GetMemUsage() float64 {
 	runtime.ReadMemStats(&m)
 	return float64(m.Alloc) / float64(m.Sys)
 
+}
+
+
+func InitLogFile() {
+	t := time.Now()
+	logFileDir := "./logs/"
+	ValidateDirExists(logFileDir)
+	logFileName := logFileDir + t.Format("20060102150405") + ".log"
+	logFile, err := os.OpenFile(logFileName, os.O_RDWR | os.O_CREATE | os.O_APPEND, 0666)
+	if err != nil {
+		log.Fatalf("error opening file: %v", err)
+	}
+	log.SetOutput(logFile)
+	log.Printf("Initialize log file")
+}
+
+
+func ValidateDirExists(dirPath string) {
+	if _, err := os.Stat(dirPath); os.IsNotExist(err) {
+		os.Mkdir(dirPath, 0700)
+	}
 }
 

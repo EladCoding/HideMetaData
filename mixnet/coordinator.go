@@ -1,7 +1,7 @@
 package mixnet
 
 import (
-	"fmt"
+	"log"
 	"net"
 	"net/rpc"
 	"sync"
@@ -46,7 +46,7 @@ func (l *CoordinatorListener) GetMessageFromClient(encMsg OnionMessage, reply *E
 
 func (l *CoordinatorListener) listenToCoordinatorAddress() {
 	address := UserAddressesMap[l.GeneralListener.name]
-	fmt.Printf("name: %v. listen to address: %v\n", l.GeneralListener.name, address)
+	log.Printf("name: %v. listen to address: %v\n", l.GeneralListener.name, address)
 	addy, err := net.ResolveTCPAddr("tcp", address)
 	CheckErrToLog(err)
 	inbound, err := net.ListenTCP("tcp", addy)
@@ -62,8 +62,7 @@ func (l *CoordinatorListener) coordinateRounds() {
 	round := 1
 	totalMsgs := 0
 	for { // for each round
-		fmt.Printf("Coordinator: ready for round: %v\n", round)
-		fmt.Printf("%v\n", time.Now().Sub(startTime))
+		log.Printf("Coordinator: ready for round: %v\n", round)
 		nextRound = nextRound.Add(RoundSlotTime) // TODO check if its good that the round are slots
 		if timeUntilNextRound := time.Until(nextRound); timeUntilNextRound > 0 {
 			time.Sleep(timeUntilNextRound)
@@ -71,15 +70,14 @@ func (l *CoordinatorListener) coordinateRounds() {
 		l.startRoundMutex.Lock()
 		l.startRound = true
 		l.startRoundMutex.Unlock()
-		fmt.Printf("Coordinator: round: %v\n", round)
-		fmt.Printf("%v\n", time.Now().Sub(startTime))
+		log.Printf("Coordinator: starting round: %v\n", round)
 		round += 1
 		l.startReading.Lock()
 		l.GeneralListener.roundFinished.L.Lock()
 		l.GeneralListener.msgMutex.Lock()
 		curRoundMsgs, curRoundSymKeys := l.GeneralListener.readRoundMsgs()
 		totalMsgs += len(curRoundMsgs)
-		fmt.Printf("Coordinator: Got: %v msgs\n", totalMsgs)
+		log.Printf("Coordinator: Got: %v msgs\n", totalMsgs)
 		l.GeneralListener.msgMutex.Unlock()
 		l.GeneralListener.roundRepliedMsgs = l.GeneralListener.sendRoundMessagesToNextHop(l.GeneralListener.nextHop, curRoundMsgs, curRoundSymKeys)
 		l.GeneralListener.roundFinished.Broadcast()
@@ -94,7 +92,7 @@ func (l *CoordinatorListener) coordinateRounds() {
 
 
 func StartCoordinator(name string, num int, nextHopName string) {
-	fmt.Printf("Starting Coordinator %v...\n", name)
+	log.Printf("Starting Coordinator %v...\n", name)
 	var nextHop *rpc.Client
 	var err error
 	roundCond := sync.NewCond(&sync.Mutex{})

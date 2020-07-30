@@ -88,7 +88,7 @@ func StartClient(name string, automaticTesting bool, statistics bool, spammingSt
 	serverNamePipe chan string, massagePipe chan string, donePipe chan bool, durationPipe chan time.Duration, receivedMessagesPipe chan string) {
 	var serverName string
 	var userSplittedMsg [][]byte
-	fmt.Printf("Starting Client %v...\n", name)
+	log.Printf("Starting Client %v...\n", name)
 	mediatorAddress := UserAddressesMap["101"]
 	client, err := rpc.Dial("tcp", mediatorAddress)
 	CheckErrToLog(err)
@@ -107,6 +107,7 @@ func StartClient(name string, automaticTesting bool, statistics bool, spammingSt
 		}
 		if serverName == "exit" {
 			fmt.Printf("Exiting!\n")
+			log.Printf("Exiting!\n")
 			return
 		} else if !StringInSlice(serverName, ServerNames) {
 			fmt.Printf("Server %s does not exists!\n", serverName)

@@ -6,10 +6,12 @@ import (
 	"fmt"
 	"github.com/EladCoding/HideMetaData/mixnet"
 	"github.com/EladCoding/HideMetaData/scripts"
+	"log"
 	"os"
 )
 
 func prepareRun() {
+	mixnet.InitLogFile()
 	scripts.CreateUsersMap()
 	mixnet.UserAddressesMap = mixnet.ReadUserAddressMap()
 	mixnet.UserPubKeyMap = mixnet.ReadUserPubKeyMap()
@@ -27,18 +29,23 @@ func main() {
 	switch runningChoice {
 	case "1":
 		fmt.Printf("--------------------Run Running example--------------------\n")
+		log.Printf("--------------------Run Running example--------------------\n")
 		scripts.RunningExample()
 	case "2":
 		fmt.Printf("--------------------Run Statistics--------------------\n")
+		log.Printf("--------------------Run Statistics--------------------\n")
 		scripts.RunStatistics()
 	case "3":
 		fmt.Printf("--------------------Run Automatic Tests--------------------\n")
+		log.Printf("--------------------Run Automatic Tests--------------------\n")
 		scripts.RunAutomaticTests()
 	case "4":
 		fmt.Printf("--------------------Run InfraStructure--------------------\n")
+		log.Printf("--------------------Run InfraStructure--------------------\n")
 		scripts.RunInfrastructure()
 	case "5":
 		fmt.Printf("--------------------Run One node--------------------\n")
+		log.Printf("--------------------Run One node--------------------\n")
 		if len(os.Args) < 4 {
 			msg := "please choose mode and name\n"
 			fmt.Printf(msg)

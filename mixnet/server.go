@@ -1,7 +1,7 @@
 package mixnet
 
 import (
-	"fmt"
+	"log"
 	"net"
 	"net/rpc"
 )
@@ -20,8 +20,7 @@ func (l *ServerListener) GetMessage(msg OnionMessage, reply *EncryptedMsg) error
 	CheckErrToLog(err)
 	decryptedData, err = pkcs7strip(decryptedData, MsgBytes)
 	CheckErrToLog(err)
-	//log.Printf("Server %v Received Message:\nFrom: %v, Data: %v\n", l.name, from, string(decryptedData))
-	//fmt.Printf("s"+string(decryptedData)+"s")
+	log.Printf("Server %v Received Message:\nFrom: %v, Data: %v\n", l.name, from, string(decryptedData))
 	replyMsg := ReplyMessage{
 		l.name, // TODO check what about from
 		from,
@@ -35,7 +34,7 @@ func (l *ServerListener) GetMessage(msg OnionMessage, reply *EncryptedMsg) error
 
 func (l *ServerListener) listenToMyAddress() {
 	address := UserAddressesMap[l.name]
-	fmt.Printf("name: %v. listen to address: %v\n", l.name, address)
+	log.Printf("name: %v. listen to address: %v\n", l.name, address)
 	addy, err := net.ResolveTCPAddr("tcp", address)
 	CheckErrToLog(err)
 	inbound, err := net.ListenTCP("tcp", addy)
@@ -46,7 +45,7 @@ func (l *ServerListener) listenToMyAddress() {
 
 
 func StartServer(name string) {
-	fmt.Printf("Starting Server %v...\n", name)
+	log.Printf("Starting Server %v...\n", name)
 	listener := ServerListener{name}
 	listener.listenToMyAddress()
 }
