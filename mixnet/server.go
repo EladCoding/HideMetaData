@@ -6,12 +6,12 @@ import (
 	"net/rpc"
 )
 
-
+// Server listener main object.
 type ServerListener struct {
 	name string
 }
 
-
+// Rpc method that receiving a message from the mixnet distributor.
 func (l *ServerListener) GetMessage(msg OnionMessage, reply *EncryptedMsg) error {
 	from := msg.From
 	//log.Printf("Server %v Received OnionMessage:\nFrom: %v, len: %v\n", l.name, from, len(msg.Data))
@@ -30,7 +30,7 @@ func (l *ServerListener) GetMessage(msg OnionMessage, reply *EncryptedMsg) error
 	return nil
 }
 
-
+// Listen to a TCP local socket, as a server.
 func (l *ServerListener) listenToMyAddress() {
 	address := UserAddressesMap[l.name]
 	log.Printf("name: %v. listen to address: %v\n", l.name, address)
@@ -42,7 +42,7 @@ func (l *ServerListener) listenToMyAddress() {
 	rpc.Accept(inbound)
 }
 
-
+// Start a server node.
 func StartServer(name string) {
 	log.Printf("Starting Server %v...\n", name)
 	listener := ServerListener{name}

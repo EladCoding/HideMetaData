@@ -2,8 +2,6 @@ package mixnet
 
 import (
 	"crypto/ecdsa"
-	"crypto/x509"
-	"encoding/pem"
 	"fmt"
 	"io/ioutil"
 	"log"
@@ -37,7 +35,7 @@ var MediatorNames = []string{"101", "102", "103"}
 var ClientNames = []string{"201", "202", "203"}
 var UserNames = append(append(ServerNames, MediatorNames...), ClientNames...)
 
-
+// Write data to a given file.
 func WriteToFile(filePath string, data []byte) {
 	// write the whole body at once
 	os.MkdirAll(filepath.Dir(filePath), os.ModePerm)
@@ -45,7 +43,7 @@ func WriteToFile(filePath string, data []byte) {
 	CheckErrAndPanic(err)
 }
 
-
+// Write data to a given file, as a json file.
 func WriteDataAsJson(jsonPath string, jsonData []byte) {
 	// sanity check
 	fmt.Println(string(jsonData))
@@ -57,7 +55,7 @@ func WriteDataAsJson(jsonPath string, jsonData []byte) {
 	fmt.Println("JSON data written to ", jsonFile.Name())
 }
 
-
+// Read data to a given file.
 func ReadFromFile(filePath string) []byte {
 	// read the whole file at once
 	data, err := ioutil.ReadFile(filePath)
@@ -65,13 +63,14 @@ func ReadFromFile(filePath string) []byte {
 	return data
 }
 
-
+// Check an error message, and panic if an error discovered.
 func CheckErrAndPanic(err error) {
 	if err != nil {
 		panic(err)
 	}
 }
 
+// Check an error message, and write the error to log if discovered.
 func CheckErrToLog(err error) {
 	if err != nil {
 		log.Fatal(err)
@@ -79,7 +78,7 @@ func CheckErrToLog(err error) {
 	CheckErrAndPanic(err)
 }
 
-
+// Check if a slice contain a given string.
 func StringInSlice(a string, list []string) bool {
 	for _, b := range list {
 		if b == a {
@@ -87,37 +86,6 @@ func StringInSlice(a string, list []string) bool {
 		}
 	}
 	return false
-}
-
-
-func EncodePrivateKey(privateKey *ecdsa.PrivateKey) string {
-	x509Encoded, _ := x509.MarshalECPrivateKey(privateKey)
-	pemEncoded := pem.EncodeToMemory(&pem.Block{Type: "PRIVATE KEY", Bytes: x509Encoded})
-	return string(pemEncoded)
-}
-
-
-func EncodePublicKey(publicKey *ecdsa.PublicKey) string {
-	x509EncodedPub, _ := x509.MarshalPKIXPublicKey(publicKey)
-	pemEncodedPub := pem.EncodeToMemory(&pem.Block{Type: "PUBLIC KEY", Bytes: x509EncodedPub})
-	return string(pemEncodedPub)
-}
-
-
-func DecodePrivateKey(pemEncoded string) *ecdsa.PrivateKey {
-	block, _ := pem.Decode([]byte(pemEncoded))
-	x509Encoded := block.Bytes
-	privateKey, _ := x509.ParseECPrivateKey(x509Encoded)
-	return privateKey
-}
-
-
-func DecodePublicKey(pemEncodedPub string) *ecdsa.PublicKey {
-	blockPub, _ := pem.Decode([]byte(pemEncodedPub))
-	x509EncodedPub := blockPub.Bytes
-	genericPublicKey, _ := x509.ParsePKIXPublicKey(x509EncodedPub)
-	publicKey := genericPublicKey.(*ecdsa.PublicKey)
-	return publicKey
 }
 
 

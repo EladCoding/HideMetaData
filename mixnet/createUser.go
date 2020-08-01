@@ -5,6 +5,7 @@ import (
 	"strings"
 )
 
+// Start one user that represent a node at the mixnet architecture.
 func StartUser(mode string, name string) {
 	switch strings.ToLower(mode) {
 	case "server":

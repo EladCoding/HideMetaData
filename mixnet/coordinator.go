@@ -8,7 +8,7 @@ import (
 	"time"
 )
 
-
+// Coordinator listener main object.
 type CoordinatorListener struct {
 	GeneralListener GeneralListener
 	startReading         *sync.Mutex
@@ -18,7 +18,7 @@ type CoordinatorListener struct {
 	startRoundMutex         *sync.RWMutex
 }
 
-
+// Rpc method that receiving a message from the user, and pass it to the next step.
 func (l *CoordinatorListener) GetMessageFromClient(encMsg OnionMessage, reply *EncryptedMsg) error {
 	decMsg, symKey := DecryptOnionLayer(encMsg, UserPrivKeyMap[l.GeneralListener.name])
 	for {
@@ -43,7 +43,7 @@ func (l *CoordinatorListener) GetMessageFromClient(encMsg OnionMessage, reply *E
 	return nil
 }
 
-
+// Listen to a TCP local socket, as the coordinator.
 func (l *CoordinatorListener) listenToCoordinatorAddress() {
 	address := UserAddressesMap[l.GeneralListener.name]
 	log.Printf("name: %v. listen to address: %v\n", l.GeneralListener.name, address)
@@ -55,7 +55,7 @@ func (l *CoordinatorListener) listenToCoordinatorAddress() {
 	go rpc.Accept(inbound)
 }
 
-
+// Manage the rounds as the first mediator at the mixnet architecture.
 func (l *CoordinatorListener) coordinateRounds() {
 	startTime := time.Now()
 	nextRound := startTime
@@ -90,7 +90,7 @@ func (l *CoordinatorListener) coordinateRounds() {
 	}
 }
 
-
+// Start a mediator node as the Coordinator.
 func StartCoordinator(name string, num int, nextHopName string) {
 	log.Printf("Starting Coordinator %v...\n", name)
 	var nextHop *rpc.Client

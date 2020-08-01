@@ -8,12 +8,12 @@ import (
 	"time"
 )
 
-
+// Distributor listener main object.
 type DistributorListener struct {
 	GeneralListener GeneralListener
 }
 
-
+// Rpc method that receiving a message from the user, and pass it to the wanted server.
 func (l *DistributorListener) GetRoundMsgs(msgs []OnionMessage, replies *[]EncryptedMsg) error {
 	l.GeneralListener.lastRoundTime = time.Now()
 	wg := &sync.WaitGroup{}
@@ -31,7 +31,7 @@ func (l *DistributorListener) GetRoundMsgs(msgs []OnionMessage, replies *[]Encry
 	return nil
 }
 
-
+// Listen to a TCP local socket, as distributor.
 func (l *DistributorListener) listenToDistributorAddress() {
 	address := UserAddressesMap[l.GeneralListener.name]
 	log.Printf("name: %v. listen to address: %v\n", l.GeneralListener.name, address)
@@ -43,7 +43,7 @@ func (l *DistributorListener) listenToDistributorAddress() {
 	rpc.Accept(inbound)
 }
 
-
+// Start a mediator node as the Distributor.
 func StartDistributor(name string, num int) {
 	log.Printf("Starting Distributor %v...\n", name)
 	var client *rpc.Client

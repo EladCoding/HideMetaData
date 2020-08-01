@@ -138,7 +138,7 @@ func createOnionMessage(name string, serverName string, msgData []byte, mediator
 			curOnionData = ConvertOnionMsgToBytes(&onionMsg)
 		}
 		curHop := hopesArr[len(hopesArr)-index-1]
-		curOnionData, curPubKey, curSymKey = hybridEncription(curOnionData, curHop)
+		curOnionData, curPubKey, curSymKey = hybridEncryption(curOnionData, curHop)
 		onionMsg = OnionMessage{
 			name, // TODO Here for testing issues, change at real-time running
 			serverName,

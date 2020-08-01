@@ -8,7 +8,7 @@ import (
 	"time"
 )
 
-
+// General listener object.
 type GeneralListener struct {
 	name             string
 	num              int
@@ -24,12 +24,12 @@ type GeneralListener struct {
 	lastRoundTime time.Time
 }
 
-
+// Mediator listener main object.
 type MediatorListener struct {
 	GeneralListener GeneralListener
 }
 
-
+// Rpc method that read a message from an other mediator, and pass it to the next one.
 func (l *GeneralListener) readMessageFromMediator(encMsg OnionMessage, msgIndex int, wg *sync.WaitGroup) (OnionMessage, int) {
 	msg, symKey := DecryptOnionLayer(encMsg, UserPrivKeyMap[l.name])
 	l.roundMsgs[msgIndex] = msg
@@ -38,7 +38,7 @@ func (l *GeneralListener) readMessageFromMediator(encMsg OnionMessage, msgIndex 
 	return msg, msgIndex
 }
 
-
+// Send a message to a specific server.
 func (l *GeneralListener) sendMsgToServer(msg OnionMessage, msgIndex int, curRoundRepliedMsgs []EncryptedMsg,
 	replyFromServerMutex *sync.Mutex, wg *sync.WaitGroup) {
 	var reply *EncryptedMsg
@@ -52,7 +52,7 @@ func (l *GeneralListener) sendMsgToServer(msg OnionMessage, msgIndex int, curRou
 	wg.Done()
 }
 
-
+// Pass all the round messages it to the next mediator hop.
 func (l *GeneralListener) sendRoundMessagesToNextHop(nextHop *rpc.Client, curRoundMsgs []OnionMessage, curRoundSymKeys []SecretKey) []EncryptedMsg {
 	var curRoundRepliedMsgs []EncryptedMsg
 	var err error
@@ -89,7 +89,7 @@ func (l *GeneralListener) sendRoundMessagesToNextHop(nextHop *rpc.Client, curRou
 	return unShuffledCurRoundRepliedMsgs
 }
 
-
+// Start receiving messages for this round.
 func (l *MediatorListener) GetRoundMsgs(msgs []OnionMessage, replies *[]EncryptedMsg) error {
 	l.GeneralListener.lastRoundTime = time.Now()
 	wg := &sync.WaitGroup{}
@@ -107,7 +107,7 @@ func (l *MediatorListener) GetRoundMsgs(msgs []OnionMessage, replies *[]Encrypte
 	return nil
 }
 
-
+// Append a message to the messages received this round.
 func (l *GeneralListener) appendMsgToRound(msg OnionMessage, msgSymKey []byte) int {
 	l.msgMutex.Lock()
 	msgIndex := len(l.roundMsgs)
@@ -117,7 +117,7 @@ func (l *GeneralListener) appendMsgToRound(msg OnionMessage, msgSymKey []byte) i
 	return msgIndex
 }
 
-
+// Read the whole message that received this round.
 func (l *GeneralListener) readRoundMsgs() ([]OnionMessage, []SecretKey) {
 	curRoundMsgs := l.roundMsgs
 	l.roundMsgs = make([]OnionMessage, 0)
@@ -126,7 +126,7 @@ func (l *GeneralListener) readRoundMsgs() ([]OnionMessage, []SecretKey) {
 	return curRoundMsgs, curRoundSymKeys
 }
 
-
+// Listen to a TCP local socket, as a mediator.
 func (l *MediatorListener) listenToMediatorAddress() {
 	address := UserAddressesMap[l.GeneralListener.name]
 	log.Printf("name: %v. listen to address: %v\n", l.GeneralListener.name, address)
@@ -138,7 +138,7 @@ func (l *MediatorListener) listenToMediatorAddress() {
 	rpc.Accept(inbound)
 }
 
-
+// Start a mediator node as a Mediator.
 func StartMediator(name string, num int, nextHopName string) {
 	log.Printf("Starting Mediator %v...\n", name)
 	var nextHop *rpc.Client
@@ -146,7 +146,6 @@ func StartMediator(name string, num int, nextHopName string) {
 	nextHopAddress := UserAddressesMap[nextHopName]
 	nextHop, err = rpc.Dial("tcp", nextHopAddress)
 	CheckErrToLog(err)
-
 
 	// listen to address
 	listener := MediatorListener{GeneralListener{
@@ -164,6 +163,5 @@ func StartMediator(name string, num int, nextHopName string) {
 		time.Now(),
 	},
 	}
-
 	listener.listenToMediatorAddress()
 }

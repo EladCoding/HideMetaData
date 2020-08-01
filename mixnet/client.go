@@ -12,7 +12,7 @@ import (
 	"time"
 )
 
-
+// Onion message object.
 type OnionMessage struct {
 	From string
 	To string
@@ -21,7 +21,7 @@ type OnionMessage struct {
 }
 
 
-// only client
+// Ask the user to input a server name.
 func getServerNameFromUser() string {
 	fmt.Print("what server do you want to send your message? (currently 001 002 or 003):")
 	var serverName string
@@ -30,7 +30,7 @@ func getServerNameFromUser() string {
 	return serverName
 }
 
-//only client
+// Ask the user to input a message.
 func getMessageFromUser(serverName string) [][]byte {
 	fmt.Println("what is your message, for server " + serverName + "?")
 	stdinReader := bufio.NewReader(os.Stdin)
@@ -39,7 +39,7 @@ func getMessageFromUser(serverName string) [][]byte {
 	return convertStringToMessages(message)
 }
 
-
+// Convert a regular string message to the wanted message object that contain him.
 func convertStringToMessages(message string) [][]byte {
 	splittedMsg := make([][]byte, 0)
 	var endMsgSpot int
@@ -57,7 +57,7 @@ func convertStringToMessages(message string) [][]byte {
 	return splittedMsg
 }
 
-
+// send a message to a specific server.
 func sendSpecificMessage(name string, serverName string, msg []byte, client *rpc.Client, wg *sync.WaitGroup,
 	automaticTesting bool, statistics bool, spammingStatistics bool, receivedMessagesPipe chan string) {
 	cipherMsg, symKeys := createOnionMessage(name, serverName, msg, MediatorNames)
@@ -83,7 +83,7 @@ func sendSpecificMessage(name string, serverName string, msg []byte, client *rpc
 	}
 }
 
-
+// Start a client node.
 func StartClient(name string, automaticTesting bool, statistics bool, spammingStatistics bool, goodputStatistics bool,
 	serverNamePipe chan string, massagePipe chan string, donePipe chan bool, durationPipe chan time.Duration, receivedMessagesPipe chan string) {
 	var serverName string
