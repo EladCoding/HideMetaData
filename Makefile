@@ -4,7 +4,7 @@ GOCMD=go
 GOBUILD=$(GOCMD) build
 GOGET=$(GOCMD) get
 GOCLEAN=$(GOCMD) clean
-BINARY_NAME=bin/mybinary
+BINARY_NAME=bin/HideMetaData
 
 all: build
 build:

@@ -28,17 +28,17 @@ func main() {
 	}
 	switch runningChoice {
 	case "1":
-		fmt.Printf("--------------------Run Running example--------------------\n")
-		log.Printf("--------------------Run Running example--------------------\n")
-		scripts.RunningExample()
+		fmt.Printf("--------------------Run Automatic Tests--------------------\n")
+		log.Printf("--------------------Run Automatic Tests--------------------\n")
+		scripts.RunAutomaticTests()
 	case "2":
 		fmt.Printf("--------------------Run Statistics--------------------\n")
 		log.Printf("--------------------Run Statistics--------------------\n")
 		scripts.RunStatistics()
 	case "3":
-		fmt.Printf("--------------------Run Automatic Tests--------------------\n")
-		log.Printf("--------------------Run Automatic Tests--------------------\n")
-		scripts.RunAutomaticTests()
+		fmt.Printf("--------------------Run Playing example--------------------\n")
+		log.Printf("--------------------Run Playing example--------------------\n")
+		scripts.PlayingExample()
 	case "4":
 		fmt.Printf("--------------------Run InfraStructure--------------------\n")
 		log.Printf("--------------------Run InfraStructure--------------------\n")
@@ -56,9 +56,9 @@ func main() {
 		}
 	default:
 		msg := "Please insert your running choice:\n" +
-			"1 Run example\n" +
+			"1 Run Automatic Tests\n" +
 			"2 Run statistics\n" +
-			"3 Run Automatic Tests\n" +
+			"3 Run Playing example\n" +
 			"4 Run infraStructure\n" +
 			"5 Run one node\n"
 		fmt.Printf(msg)

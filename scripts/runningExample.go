@@ -1,7 +1,7 @@
 package scripts
 
 
-func RunningExample() {
+func PlayingExample() {
 	go RunInfrastructure()
 	runClient()
 }
