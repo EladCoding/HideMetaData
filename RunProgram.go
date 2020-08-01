@@ -10,6 +10,7 @@ import (
 	"os"
 )
 
+// Initialize mixnet architecture and external files to prepare for a simulation.
 func prepareRun() {
 	mixnet.InitLogFile()
 	scripts.CreateNodesMap()
@@ -19,6 +20,7 @@ func prepareRun() {
 	gob.Register(elliptic.P256())
 }
 
+// Run the whole mixnet architecture simulation.
 func main() {
 	prepareRun()
 	args := os.Args
