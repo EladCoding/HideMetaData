@@ -23,7 +23,7 @@ type ReplyMessage struct {
 var RsaKeyBits = 2048
 var CipherRsaLen = RsaKeyBits / 8
 var AesKeyBytes = 32
-var MsgBytes = 256 // TODO check size
+var MsgBytes = 256
 var maxUserMsgSize = MsgBytes - 1
 
 // general vars
@@ -31,10 +31,10 @@ const UserNameLen = 3
 
 var RoundSlotTime = 20 * time.Second
 
-const FakeMsgsLaplaceMean = 1000.0                      // TODO change and check
-const fakeMsgsLaplaceScale = (FakeMsgsLaplaceMean / 16) // TODO change and check
+const FakeMsgsLaplaceMean = 1000.0
+const fakeMsgsLaplaceScale = (FakeMsgsLaplaceMean / 16)
 
-func ReadUserAddressMap() UserAddressMapType { // TODO change
+func ReadUserAddressMap() UserAddressMapType {
 	var usersMap UserAddressMapType
 	jsonFile, err := os.Open(UserAddressesMapPath)
 	CheckErrAndPanic(err)
@@ -44,7 +44,7 @@ func ReadUserAddressMap() UserAddressMapType { // TODO change
 	return usersMap
 }
 
-func ReadUserPubKeyMap() UserDecodedPublicKeyMapType { // TODO change
+func ReadUserPubKeyMap() UserDecodedPublicKeyMapType {
 	var encodedUsersMap UserEncodedPublicKeyMapType
 	decodedUsersMap := make(UserDecodedPublicKeyMapType, 0)
 	jsonFile, err := os.Open(UserPublicKeysMapPath)
@@ -58,7 +58,7 @@ func ReadUserPubKeyMap() UserDecodedPublicKeyMapType { // TODO change
 	return decodedUsersMap
 }
 
-func ReadUserPrivKeyMap() UserDecodedPrivateKeyMapType { // TODO change
+func ReadUserPrivKeyMap() UserDecodedPrivateKeyMapType {
 	var encodedUsersMap UserEncodedPrivateKeyMapType
 	decodedUsersMap := make(UserDecodedPrivateKeyMapType, 0)
 	jsonFile, err := os.Open(UserPrivateKeysMapPath)
@@ -72,7 +72,7 @@ func ReadUserPrivKeyMap() UserDecodedPrivateKeyMapType { // TODO change
 	return decodedUsersMap
 }
 
-func shuffleMsgs(msgs []OnionMessage) ([]OnionMessage, []int) { // TODO check how to shuffle properly (cryptographlly)
+func shuffleMsgs(msgs []OnionMessage) ([]OnionMessage, []int) {
 	shuffledMsgs := make([]OnionMessage, len(msgs))
 	perm := rand.Perm(len(msgs))
 	for i, v := range perm {
@@ -81,7 +81,7 @@ func shuffleMsgs(msgs []OnionMessage) ([]OnionMessage, []int) { // TODO check ho
 	return shuffledMsgs, perm
 }
 
-func reverseShufflingReplyMsgs(msgs []EncryptedMsg, perm []int) []EncryptedMsg { // TODO check how to shuffle properly (cryptographlly)
+func reverseShufflingReplyMsgs(msgs []EncryptedMsg, perm []int) []EncryptedMsg {
 	reversedMsgs := make([]EncryptedMsg, len(msgs))
 	for i, v := range perm {
 		reversedMsgs[i] = msgs[v]
@@ -140,7 +140,7 @@ func createOnionMessage(name string, serverName string, msgData []byte, mediator
 		curHop := hopesArr[len(hopesArr)-index-1]
 		curOnionData, curPubKey, curSymKey = hybridEncription(curOnionData, curHop)
 		onionMsg = OnionMessage{
-			name, // TODO check what about from
+			name, // TODO Here for testing issues, change at real-time running
 			serverName,
 			curPubKey,
 			curOnionData,
@@ -154,7 +154,7 @@ func appendFakeMsgs(curMsgs []OnionMessage, numOfMsgsToAppend int, name string, 
 	for i := 0; i < numOfMsgsToAppend; i += 1 {
 		fakeMsgData, err := pkcs7padding([]byte("Fake"), MsgBytes)
 		CheckErrToLog(err)
-		//randServerName := scripts.ServerNames[rand.Intn(len(scripts.ServerNames))] // TODO back this when release (commented for debugging)
+		//randServerName := scripts.ServerNames[rand.Intn(len(scripts.ServerNames))] // TODO back this when running real-time application (here for testing)
 		randServerName := "001"
 		cipherMsg, _ := createOnionMessage(name, randServerName, fakeMsgData, mediatorsLeft)
 		curMsgs = append(curMsgs, cipherMsg)
@@ -174,7 +174,6 @@ func DecryptOnionLayer(onionMsg OnionMessage, privKey *ecdsa.PrivateKey) (OnionM
 }
 
 func sampleFromLaplace() int {
-	return 0 // TODO remove
 	numOfFakes := int(myLaplace.Rand())
 	return intMax(numOfFakes, 0)
 }

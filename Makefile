@@ -1,4 +1,3 @@
-# TODO write better Makefile (add test, deps, linux build, etc.)
 # Go parameters
 GOCMD=go
 GOBUILD=$(GOCMD) build

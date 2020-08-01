@@ -15,9 +15,6 @@ type DistributorListener struct {
 
 
 func (l *DistributorListener) GetRoundMsgs(msgs []OnionMessage, replies *[]EncryptedMsg) error {
-	//if time.Since(l.GeneralListener.lastRoundTime) < minRoundSlotTime {
-	//	panic("Round Time was too short.\n")
-	//} // TODO return that
 	l.GeneralListener.lastRoundTime = time.Now()
 	wg := &sync.WaitGroup{}
 	wg.Add(len(msgs))

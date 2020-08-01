@@ -22,10 +22,9 @@ func (l *ServerListener) GetMessage(msg OnionMessage, reply *EncryptedMsg) error
 	CheckErrToLog(err)
 	log.Printf("Server %v Received Message:\nFrom: %v, Data: %v\n", l.name, from, string(decryptedData))
 	replyMsg := ReplyMessage{
-		l.name, // TODO check what about from
+		l.name,
 		from,
-		//[]byte(fmt.Sprintf("I got ur msg: %s", string(decryptedData))),
-		decryptedData, // TODO change after statistics done
+		decryptedData,
 	}
 	*reply, err = symmetricEncryption(ConvertReplyMsgToBytes(&replyMsg), symKey)
 	return nil

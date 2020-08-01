@@ -65,7 +65,7 @@ func (l *GeneralListener) sendRoundMessagesToNextHop(nextHop *rpc.Client, curRou
 
 	if l.isDistributor {
 		curRoundRepliedMsgs = make([]EncryptedMsg, len(curRoundShuffledMsgs))
-		replyFromServerMutex := &sync.Mutex{} // TODO maybe mutex not needed because we put the reply in a specific spot
+		replyFromServerMutex := &sync.Mutex{}
 		wg := &sync.WaitGroup{}
 		wg.Add(len(curRoundShuffledMsgs))
 		for msgIndex, msg := range curRoundShuffledMsgs {
@@ -91,9 +91,6 @@ func (l *GeneralListener) sendRoundMessagesToNextHop(nextHop *rpc.Client, curRou
 
 
 func (l *MediatorListener) GetRoundMsgs(msgs []OnionMessage, replies *[]EncryptedMsg) error {
-	//if time.Since(l.GeneralListener.lastRoundTime) < minRoundSlotTime {
-	//	panic("Round Time was too short.\n")
-	//} // TODO return that
 	l.GeneralListener.lastRoundTime = time.Now()
 	wg := &sync.WaitGroup{}
 	wg.Add(len(msgs))

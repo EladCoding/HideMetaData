@@ -73,10 +73,10 @@ func CheckErrAndPanic(err error) {
 }
 
 func CheckErrToLog(err error) {
-	CheckErrAndPanic(err) // TODO remove
 	if err != nil {
 		log.Fatal(err)
 	}
+	CheckErrAndPanic(err)
 }
 
 
