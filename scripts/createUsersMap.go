@@ -1,30 +1,19 @@
 package scripts
 
 import (
-	"crypto/ecdsa"
-	"crypto/elliptic"
-	"crypto/rand"
 	"encoding/json"
 	"fmt"
 	"github.com/EladCoding/HideMetaData/mixnet"
 )
 
-
-func GenerateAsymmetricKeyPair() (*ecdsa.PrivateKey, ecdsa.PublicKey) {
-	privKey, err := ecdsa.GenerateKey(elliptic.P256(), rand.Reader)
-	mixnet.CheckErrToLog(err)
-	pubKey := privKey.PublicKey
-	return privKey, pubKey
-}
-
-
-func CreateUsersMap() {
+// create a basic node mapping, for simulating mixnet architecture.
+func CreateNodesMap() {
 	userAddresses := make(mixnet.UserAddressMapType, 0)
 	userPublicKeys := make(mixnet.UserEncodedPublicKeyMapType, 0)
 	userPrivateKeys := make(mixnet.UserEncodedPrivateKeyMapType, 0)
 	for _, userName := range mixnet.UserNames {
 		userAddresses[userName] = fmt.Sprintf(mixnet.AddressFormat, userName)
-		privateKey, publicKey := GenerateAsymmetricKeyPair()
+		privateKey, publicKey := mixnet.GenerateAsymmetricKeyPair()
 		userPublicKeys[userName] = mixnet.EncodePublicKey(&publicKey)
 		userPrivateKeys[userName] = mixnet.EncodePrivateKey(privateKey)
 	}

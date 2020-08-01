@@ -12,7 +12,7 @@ import (
 
 func prepareRun() {
 	mixnet.InitLogFile()
-	scripts.CreateUsersMap()
+	scripts.CreateNodesMap()
 	mixnet.UserAddressesMap = mixnet.ReadUserAddressMap()
 	mixnet.UserPubKeyMap = mixnet.ReadUserPubKeyMap()
 	mixnet.UserPrivKeyMap = mixnet.ReadUserPrivKeyMap()

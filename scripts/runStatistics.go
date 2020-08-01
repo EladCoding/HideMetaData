@@ -7,15 +7,18 @@ import (
 	"time"
 )
 
-func sendSpammingMsg(i int, serverName string, clientDonePipe chan bool, serverNamePipe chan string, messagesPipe chan string) {
+// Send a specific dummy message to a specific server.
+func sendSpammingMsg(i int, serverName string, clientDonePipe chan bool, serverNamePipe chan string,
+	messagesPipe chan string) {
 	msg := fmt.Sprintf("%v", i)
 	clientDonePipe <- false
 	serverNamePipe <- serverName
 	messagesPipe <- msg
 }
 
-func spamMixNet(clientName string, serverName string, numberOfMsgs int, durationPipe chan time.Duration, slotDuration time.Duration) {
-
+// Send a lot of dummy messages to a specific server, and check the throughput.
+func spamMixNet(clientName string, serverName string, numberOfMsgs int, durationPipe chan time.Duration,
+	slotDuration time.Duration) {
 	serverNamePipe := make(chan string)
 	messagesPipe := make(chan string)
 	clientDonePipe := make(chan bool)
@@ -44,8 +47,8 @@ func spamMixNet(clientName string, serverName string, numberOfMsgs int, duration
 	durationPipe <- time.Since(startTime)
 }
 
+// Send a specific dummy message to a specific server, and check the goodput.
 func sendNiceMsgs(clientName string, serverName string, numberOfMsgs int, durationPipe chan time.Duration) {
-
 	serverNamePipe := make(chan string)
 	messagesPipe := make(chan string)
 	clientDonePipe := make(chan bool)
@@ -69,8 +72,9 @@ func sendNiceMsgs(clientName string, serverName string, numberOfMsgs int, durati
 	durationPipe <- totalDuration / time.Duration(numberOfMsgs)
 }
 
+// Run mixnet statistics.
 func RunStatistics() {
-	CreateUsersMap()
+	CreateNodesMap()
 	go runMixNetWithoutClients()
 	time.Sleep(2 * time.Second)
 

@@ -5,7 +5,7 @@ import (
 	"time"
 )
 
-
+// Run the mixnet architecture without clients.
 func runMixNetWithoutClients() {
 	go mixnet.StartUser("server", "001")
 	time.Sleep(200*time.Millisecond)
@@ -20,12 +20,12 @@ func runMixNetWithoutClients() {
 	mixnet.StartUser("mediator", "101")
 }
 
-
+// Run one node of the mixnet architecture.
 func runOneNode(mode string, name string) {
 	mixnet.StartUser(mode, name)
 }
 
-
+// Run a fixed client as a mixnet architecture node.
 func runClient() {
 	mode := "client"
 	name := "201"

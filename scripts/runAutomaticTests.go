@@ -6,8 +6,9 @@ import (
 	"time"
 )
 
-
-func sendTestingMsg(msg string, serverName string, clientDonePipe chan bool, serverNamePipe chan string, messagesPipe chan string, receivedMsgPipe chan string) bool {
+// send a specific test message to a specific server, and validate that the message return successfully and anonymously.
+func sendTestingMsg(msg string, serverName string, clientDonePipe chan bool, serverNamePipe chan string,
+	messagesPipe chan string, receivedMsgPipe chan string) bool {
 	clientDonePipe <- false
 	serverNamePipe <- serverName
 	messagesPipe <- msg
@@ -24,7 +25,7 @@ func sendTestingMsg(msg string, serverName string, clientDonePipe chan bool, ser
 	}
 }
 
-
+// send a few messages to a some servers, and validate that the messages return successfully and anonymously.
 func testMixNet(clientName string, serverName string, numberOfMsgs int, testSucceededPipe chan bool) {
 	serverNamePipe := make(chan string)
 	messagesPipe := make(chan string)
@@ -50,11 +51,10 @@ func testMixNet(clientName string, serverName string, numberOfMsgs int, testSucc
 	testSucceededPipe <- testSucceeded
 }
 
-
-
+// Run the automatic tests.
 func RunAutomaticTests() {
 	mixnet.RoundSlotTime = time.Second
-	CreateUsersMap()
+	CreateNodesMap()
 	go runMixNetWithoutClients()
 	time.Sleep(2*time.Second)
 
