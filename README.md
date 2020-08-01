@@ -14,13 +14,13 @@ go version 1.14.6
 
 ### Installing
 
-Clone the project to your computer
+Clone the project to your computer.
 
 ```
 git clone https://github.com/EladCoding/HideMetaData.git
 ```
 
-Compile the project
+Compile the project.
 
 ```
 cd $ProjectDir$
@@ -29,7 +29,7 @@ make
 
 ## Running the tests
 
-Run an automatic test. the test:
+Run an automatic test.
 - simulate mixnet infraStructure, three servers, and two clients.
 - send a few messages from the clients to the servers, through the mixnet.
 - validate that all messages has sent successfully to the server, and that the server has sent a received message to the client.
@@ -73,6 +73,15 @@ On a mediator machine, run:
 ```
 $ProjectDir$\bin\HideMetaData 5 mediator $MediatorName$
 ```
+
+
+On a client machine, run:
+
+```
+$ProjectDir$\bin\HideMetaData 5 client $ClientName$
+```
+
+
 *Note that before running this part you should update the specific mixnet architecture details, at:
 $ProjectDir$\externals
 
