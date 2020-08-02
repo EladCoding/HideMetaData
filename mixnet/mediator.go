@@ -38,20 +38,6 @@ func (l *GeneralListener) readMessageFromMediator(encMsg OnionMessage, msgIndex 
 	return msg, msgIndex
 }
 
-// Send a message to a specific server.
-func (l *GeneralListener) sendMsgToServer(msg OnionMessage, msgIndex int, curRoundRepliedMsgs []EncryptedMsg,
-	replyFromServerMutex *sync.Mutex, wg *sync.WaitGroup) {
-	var reply *EncryptedMsg
-	destinitionServer := msg.To
-	client := l.clients[destinitionServer]
-	err := client.Call("ServerListener.GetMessage", msg, &reply)
-	CheckErrToLog(err)
-	replyFromServerMutex.Lock()
-	curRoundRepliedMsgs[msgIndex] = *reply
-	replyFromServerMutex.Unlock()
-	wg.Done()
-}
-
 // Pass all the round messages it to the next mediator hop.
 func (l *GeneralListener) sendRoundMessagesToNextHop(nextHop *rpc.Client, curRoundMsgs []OnionMessage, curRoundSymKeys []SecretKey) []EncryptedMsg {
 	var curRoundRepliedMsgs []EncryptedMsg

@@ -11,7 +11,13 @@ func StartUser(mode string, name string) {
 	case "server":
 		for _, serverName := range ServerNames {
 			if name == serverName {
-				StartServer(name)
+				if name == "001" {
+					StartServer001(name)
+				} else if name == "002" {
+					StartServer002(name)
+				} else if name == "003" {
+					StartServer003(name)
+				}
 				return
 			}
 		}

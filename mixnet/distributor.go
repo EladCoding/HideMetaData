@@ -31,6 +31,20 @@ func (l *DistributorListener) GetRoundMsgs(msgs []OnionMessage, replies *[]Encry
 	return nil
 }
 
+// Send a message to a specific server.
+func (l *GeneralListener) sendMsgToServer(msg OnionMessage, msgIndex int, curRoundRepliedMsgs []EncryptedMsg,
+	replyFromServerMutex *sync.Mutex, wg *sync.WaitGroup) {
+	var reply *EncryptedMsg
+	destinitionServer := msg.To
+	client := l.clients[destinitionServer]
+	err := client.Call("ServerListener"+destinitionServer+".GetMessage", msg, &reply)
+	CheckErrToLog(err)
+	replyFromServerMutex.Lock()
+	curRoundRepliedMsgs[msgIndex] = *reply
+	replyFromServerMutex.Unlock()
+	wg.Done()
+}
+
 // Listen to a TCP local socket, as distributor.
 func (l *DistributorListener) listenToDistributorAddress() {
 	address := UserAddressesMap[l.GeneralListener.name]

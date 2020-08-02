@@ -80,6 +80,7 @@ func sendSpecificMessage(name string, serverName string, msg []byte, client *rpc
 		wg.Done()
 	} else if !statistics {
 		log.Printf("Client %v got reply message:\nFrom: %v, Data: %v\n", name, replyMsg.From, string(replyMsg.Data))
+		fmt.Printf("Client %v got reply message:\nFrom: %v, Data: %v\n", name, replyMsg.From, string(replyMsg.Data))
 	}
 }
 
@@ -135,7 +136,6 @@ func StartClient(name string, automaticTesting bool, statistics bool, spammingSt
 			}
 		}
 		if !(statistics || automaticTesting) {
-			fmt.Print("Client: Sleep 100 Mil\n")
 			time.Sleep(100 * time.Millisecond)
 		}
 	}

@@ -7,12 +7,12 @@ import (
 )
 
 // Server listener main object.
-type ServerListener struct {
+type ServerListener003 struct {
 	name string
 }
 
 // Rpc method that receiving a message from the mixnet distributor.
-func (l *ServerListener) GetMessage(msg OnionMessage, reply *EncryptedMsg) error {
+func (l *ServerListener003) GetMessage(msg OnionMessage, reply *EncryptedMsg) error {
 	from := msg.From
 	//log.Printf("Server %v Received OnionMessage:\nFrom: %v, len: %v\n", l.name, from, len(msg.Data))
 	symKey := DecryptKeyForKeyExchange(msg.PubKeyForSecret, UserPrivKeyMap[l.name])
@@ -31,7 +31,7 @@ func (l *ServerListener) GetMessage(msg OnionMessage, reply *EncryptedMsg) error
 }
 
 // Listen to a TCP local socket, as a server.
-func (l *ServerListener) listenToMyAddress() {
+func (l *ServerListener003) listenToMyAddress() {
 	address := UserAddressesMap[l.name]
 	log.Printf("name: %v. listen to address: %v\n", l.name, address)
 	addy, err := net.ResolveTCPAddr("tcp", address)
@@ -43,8 +43,8 @@ func (l *ServerListener) listenToMyAddress() {
 }
 
 // Start a server node.
-func StartServer(name string) {
+func StartServer003(name string) {
 	log.Printf("Starting Server %v...\n", name)
-	listener := ServerListener{name}
+	listener := ServerListener003{name}
 	listener.listenToMyAddress()
 }
