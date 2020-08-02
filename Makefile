@@ -1,9 +1,15 @@
 # Go parameters
+
 GOCMD=go
 GOBUILD=$(GOCMD) build
 GOGET=$(GOCMD) get
 GOCLEAN=$(GOCMD) clean
-BINARY_NAME=bin/HideMetaData
+
+ifdef OS
+	BINARY_NAME=bin/HideMetaData.exe
+else
+	BINARY_NAME=bin/HideMetaData
+endif
 
 all: build
 build:

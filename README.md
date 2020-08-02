@@ -36,7 +36,7 @@ Run an automatic test.
 - validate that the server has decrypted and read the message successfully.
 
 ```
-$ProjectDir$\bin\HideMetaData 1
+$ProjectDir$\bin\$ExecutableFileName$ 1
 ```
 
 Run statistics.
@@ -46,7 +46,7 @@ Run statistics.
 we estimate that real-time using will be about four times more effective than the results we get here.
 
 ```
-$ProjectDir$\bin\HideMetaData 2
+$ProjectDir$\bin\$ExecutableFileName$ 2
 ```
 
 Run Playing example.
@@ -57,7 +57,7 @@ Run Playing example.
 - send the message to the server, and ask for more messages.
 
 ```
-$ProjectDir$\bin\HideMetaData 3
+$ProjectDir$\bin\$ExecutableFileName$ 3
 ```
 
 ## Deployment
@@ -65,20 +65,20 @@ $ProjectDir$\bin\HideMetaData 3
 On a server machine, run:
 
 ```
-$ProjectDir$\bin\HideMetaData 5 server $ServerName$
+$ProjectDir$\bin\$ExecutableFileName$ 5 server $ServerName$
 ```
 
 On a mediator machine, run:
 
 ```
-$ProjectDir$\bin\HideMetaData 5 mediator $MediatorName$
+$ProjectDir$\bin\$ExecutableFileName$ 5 mediator $MediatorName$
 ```
 
 
 On a client machine, run:
 
 ```
-$ProjectDir$\bin\HideMetaData 5 client $ClientName$
+$ProjectDir$\bin\$ExecutableFileName$ 5 client $ClientName$
 ```
 
 
