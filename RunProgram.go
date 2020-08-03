@@ -8,6 +8,8 @@ import (
 	"github.com/EladCoding/HideMetaData/scripts"
 	"log"
 	"os"
+	"strconv"
+	"time"
 )
 
 // Initialize mixnet architecture and external files to prepare for a simulation.
@@ -28,8 +30,19 @@ func main() {
 	if len(args) > 1 {
 		runningChoice = args[1]
 	}
+	if len(args) > 2 {
+		if i, err := strconv.ParseInt(args[2], 10, 64); err == nil {
+			mixnet.RoundSlotTime = time.Duration(i) * time.Second
+		} else {
+			fmt.Printf("Round slot time is not valid!\n")
+			return
+		}
+	}
 	switch runningChoice {
 	case "1":
+		if len(args) <= 2 {
+			mixnet.RoundSlotTime = time.Second
+		}
 		fmt.Printf("--------------------Run Automatic Tests--------------------\n")
 		log.Printf("--------------------Run Automatic Tests--------------------\n")
 		scripts.RunAutomaticTests()
@@ -58,11 +71,12 @@ func main() {
 		}
 	default:
 		msg := "Please insert your running choice:\n" +
-			"1 Run Automatic Tests\n" +
-			"2 Run statistics\n" +
-			"3 Run Playing example\n" +
-			"4 Run infraStructure\n" +
-			"5 Run one node\n"
+			"1 Run Automatic Tests.\n" +
+			"2 Run statistics.\n" +
+			"3 Run Playing example.\n" +
+			"4 Run infraStructure.\n" +
+			"5 Run one node.\n\n" +
+			"For changing round slot time - pass the new round slot seconds as a third parameter.\n"
 		fmt.Printf(msg)
 	}
 }

@@ -36,7 +36,7 @@ Run an automatic test.
 - validate that the server has decrypted and read the message successfully.
 
 ```
-$ProjectDir$\bin\$ExecutableFileName$ 1
+$ProjectDir$\bin\$ExecutableFileName$ 1 [Round Slot Time]
 ```
 
 Run statistics.
@@ -46,7 +46,7 @@ Run statistics.
 we estimate that real-time using will be about four times more effective than the results we get here.
 
 ```
-$ProjectDir$\bin\$ExecutableFileName$ 2
+$ProjectDir$\bin\$ExecutableFileName$ 2 [Round Slot Time]
 ```
 
 Run Playing example.
@@ -57,7 +57,7 @@ Run Playing example.
 - send the message to the server, and ask for more messages.
 
 ```
-$ProjectDir$\bin\$ExecutableFileName$ 3
+$ProjectDir$\bin\$ExecutableFileName$ 3 [Round Slot Time]
 ```
 
 ## Deployment
@@ -71,7 +71,7 @@ $ProjectDir$\bin\$ExecutableFileName$ 5 server $ServerName$
 On a mediator machine, run:
 
 ```
-$ProjectDir$\bin\$ExecutableFileName$ 5 mediator $MediatorName$
+$ProjectDir$\bin\$ExecutableFileName$ 5 mediator $MediatorName$ [Round Slot Time]
 ```
 
 
@@ -82,8 +82,9 @@ $ProjectDir$\bin\$ExecutableFileName$ 5 client $ClientName$
 ```
 
 
-*Note that before running this part you should update the specific mixnet architecture details, at:
-$ProjectDir$\externals
+*Note that before running this part you should update the specific mixnet architecture details, 
+and implement the function that generate it. at:
+$ProjectDir$\scripts\CreateNodesMap\CreateNodesMap function.
 
 ## Contributing
 

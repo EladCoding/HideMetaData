@@ -28,15 +28,27 @@ func sendTestingMsg(msg string, serverName string, clientDonePipe chan bool, ser
 		return false
 	} else {
 		fmt.Printf(
-			"Client sent: %v.\n" +
-				"Message encrypted and sent to server\n" +
-				"Server received: %v\n",
-			msg, receivedMsg)
+			"------------------------------\n" +
+				"Client got a message.\n" +
+				"Client encrypted the message.\n" +
+				"Client sent the message to the server through the mixnet.\n" +
+				"Client sent the message to the server through the mixnet.\n" +
+				"Server decrypted the message.\n" +
+				"Client sent a reply message to the client through the mixnet.\n" +
+				"Client received the reply message and decrypted it.\n" +
+				"Messages identical!\n",
+			)
 		log.Printf(
-			"Client sent: %v.\n" +
-				"Message encrypted and sent to server\n" +
-				"Server received: %v\n",
-			msg, receivedMsg)
+			"------------------------------\n" +
+			"Client got a message.\n" +
+				"Client encrypted the message.\n" +
+				"Client sent the message to the server through the mixnet.\n" +
+				"Client sent the message to the server through the mixnet.\n" +
+				"Server decrypted the message.\n" +
+				"Client sent a reply message to the client through the mixnet.\n" +
+				"Client received the reply message and decrypted it.\n" +
+				"Messages identical!\n",
+		)
 		return true
 	}
 }
@@ -69,7 +81,6 @@ func testMixNet(clientName string, serverName string, numberOfMsgs int, testSucc
 
 // Run the automatic tests.
 func RunAutomaticTests() {
-	mixnet.RoundSlotTime = time.Second
 	fmt.Printf("Create Nodes Map.\n")
 	log.Printf("Create Nodes Map.\n")
 	CreateNodesMap()
