@@ -3,6 +3,7 @@ package scripts
 import (
 	"fmt"
 	"github.com/EladCoding/HideMetaData/mixnet"
+	"log"
 	"time"
 )
 
@@ -16,11 +17,26 @@ func sendTestingMsg(msg string, serverName string, clientDonePipe chan bool, ser
 	if receivedMsg != msg {
 		fmt.Printf(
 			"Test Failed.\n" +
-			"Original massage: %v\n" +
-			"Recived massage: %v",
+				"Original massage: %v\n" +
+				"Recived massage: %v\n",
+			msg, receivedMsg)
+		log.Printf(
+			"Test Failed.\n" +
+				"Original massage: %v\n" +
+				"Recived massage: %v\n",
 			msg, receivedMsg)
 		return false
 	} else {
+		fmt.Printf(
+			"Client sent: %v.\n" +
+				"Message encrypted and sent to server\n" +
+				"Server received: %v\n",
+			msg, receivedMsg)
+		log.Printf(
+			"Client sent: %v.\n" +
+				"Message encrypted and sent to server\n" +
+				"Server received: %v\n",
+			msg, receivedMsg)
 		return true
 	}
 }
@@ -54,7 +70,11 @@ func testMixNet(clientName string, serverName string, numberOfMsgs int, testSucc
 // Run the automatic tests.
 func RunAutomaticTests() {
 	mixnet.RoundSlotTime = time.Second
+	fmt.Printf("Create Nodes Map.\n")
+	log.Printf("Create Nodes Map.\n")
 	CreateNodesMap()
+	fmt.Printf("Start InfraStructure.\n")
+	log.Printf("Start InfraStructure.\n")
 	go runMixNetWithoutClients()
 	time.Sleep(2*time.Second)
 
@@ -65,6 +85,8 @@ func RunAutomaticTests() {
 	firstTestSuccededPipe := make(chan bool)
 	secondTestSuccededPipe := make(chan bool)
 
+	fmt.Printf("Send Messages from clients to servers.\n")
+	log.Printf("Send Messages from clients to servers.\n")
 	go testMixNet(firstClientName, serverName, numberOfTestMsgs, firstTestSuccededPipe)
 	time.Sleep(time.Second)
 
