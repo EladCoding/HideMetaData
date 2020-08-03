@@ -32,9 +32,8 @@ func sendTestingMsg(msg string, serverName string, clientDonePipe chan bool, ser
 				"Client got a message.\n" +
 				"Client encrypted the message.\n" +
 				"Client sent the message to the server through the mixnet.\n" +
-				"Client sent the message to the server through the mixnet.\n" +
-				"Server decrypted the message.\n" +
-				"Client sent a reply message to the client through the mixnet.\n" +
+				"Server received the message and decrypted it.\n" +
+				"Server sent a reply message to the client through the mixnet.\n" +
 				"Client received the reply message and decrypted it.\n" +
 				"Messages identical!\n",
 			)
@@ -43,9 +42,8 @@ func sendTestingMsg(msg string, serverName string, clientDonePipe chan bool, ser
 			"Client got a message.\n" +
 				"Client encrypted the message.\n" +
 				"Client sent the message to the server through the mixnet.\n" +
-				"Client sent the message to the server through the mixnet.\n" +
-				"Server decrypted the message.\n" +
-				"Client sent a reply message to the client through the mixnet.\n" +
+				"Server received the message and decrypted it.\n" +
+				"Server sent a reply message to the client through the mixnet.\n" +
 				"Client received the reply message and decrypted it.\n" +
 				"Messages identical!\n",
 		)
